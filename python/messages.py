@@ -17,7 +17,8 @@ dry_run = False
 ## Edit these URLs to point to your challenge and its support forum
 defaults = dict(
     challenge_instructions_url = "https://www.synapse.org/",
-    support_forum_url = "http://support.sagebase.org/sagebase")
+    support_forum_url = "http://support.sagebase.org/sagebase",
+    scoring_script = "the scoring script")
 
 ##---------------------------------------------------------
 ## Message templates:
@@ -43,7 +44,7 @@ submission ID: <b>{submission_id}</b></p>
 <p>If you have questions, please ask on the forums at {support_forum_url}.</p>
 
 <p>Sincerely,<br>
-the scoring script</p>
+{scoring_script}</p>
 """
 
 validation_passed_subject_template = "Submission received to {queue_name}"
@@ -59,7 +60,7 @@ submission ID: <b>{submission_id}</b></p>
 instructions which can be found at {challenge_instructions_url}.</p>
 
 <p>Sincerely,<br>
-the scoring script</p>
+{scoring_script}</p>
 """
 
 scoring_succeeded_subject_template = "Scored submission to {queue_name}"
@@ -75,7 +76,7 @@ scoring_succeeded_template = """\
 <p>If you have questions, please ask on the forums at {support_forum_url}.</p>
 
 <p>Sincerely,<br>
-the scoring script</p>
+{scoring_script}</p>
 """
 
 scoring_error_subject_template = "Exception while scoring submission to {queue_name}"
@@ -97,7 +98,7 @@ submission ID: <b>{submission_id}</b></p>
 <p>If you have questions, please ask on the forums at {support_forum_url}.</p>
 
 <p>Sincerely,<br>
-the scoring script</p>
+{scoring_script}</p>
 """
 
 notification_subject_template = "Exception while scoring submission to {queue_name}"
@@ -111,7 +112,7 @@ error_notification_template = """\
 </pre></blockquote>
 
 <p>Sincerely,<br>
-the scoring script</p>
+{scoring_script}</p>
 """
 
 
