@@ -235,9 +235,15 @@ def score(evaluation, dry_run=False):
                 score['team'] = get_user_name(profile)
             else:
                 score['team'] = '?'
-
-            status.annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
+            add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
+            for i in add_annotations:
+                if status.annotations.get(i) is not None:
+                    status.annotations[i].extend(add_annotations[i])
+                else:
+                    status.annotations[i] = add_annotations[i]
+            #status.annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
             status.status = "SCORED"
+            ### Add in DATE as a public annotation and change team annotation to not private
             ## if there's a table configured, update it
             if not dry_run and evaluation.id in conf.leaderboard_tables:
                 update_leaderboard_table(conf.leaderboard_tables[evaluation.id], submission, fields=score, dry_run=False)
