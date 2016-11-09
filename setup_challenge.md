@@ -18,8 +18,8 @@ All DREAM challenges should have a live and staging site.  The two projects shou
 
 The comprehensive [DREAM Challenge Wiki Template](https://www.synapse.org/#!Synapse:syn2769515/wiki/) is a great starting point for your challenge's wiki pages.  It also helps to have a look at [some examples from previous challenges](https://www.synapse.org/#!Challenges:DREAM).  **This page will act as the staging site until the challenge is ready to be launched.  Then all the pages on the staging site will be copied onto the main site.** To copy the Challenge Wiki Template to your new project:  Say your private project is "syn0123456".   First, ensure your project has no wiki page (deleting the current one if necessary). 
 
-####Shell Script
-Copy and paste this [file](https://raw.githubusercontent.com/thomasyu888/SynapseChallengeTemplates/master/createChallengeWiki.command) onto your computer and name it `createChallengeWiki.command` and double click the script.  This script will prompt you to login to synapse.  Give it your private project "syn0123456", and it will copy the template over. 
+####Shell Script (MAC only)
+Download this [file](https://sourceforge.net/projects/createsynapsechallengewiki/files/createChallengeWiki.command/download) and double click the script.  You may have to right click and click open if you have script security settings on your computer. This script will prompt you to login to synapse.  Give it your private project "syn0123456", and it will copy the template over. 
 
 #### Python
 ```
