@@ -151,8 +151,29 @@ Synapse has the ability to apply access restrictions to sensitive, human data, s
 There are cases in which there are no human data concerns but for which a pop-up agreement needs to be presented before download data for the first time.  Contact the Access and Compliance Team to set up this agreement. 
 
 ## Create an Evaluation Queue for Submissions
-Challenge participants submit their entries as Synapse Files to an Evaluation queue ("Evaluation" for short) which you manage.  You can create a new Evaluation using our R or Python client.  See the respective clients' documentation for instructions for creating an Evaluation.  You may create multiple Evaluation queues to support sub-challenges having different types of submissions.  You may also define submission 'rounds' (start date, round duration, and number of rounds) with optional
-submission quota (maximum submissions per participant or team) for each Evaluation queue.
+Challenge participants submit their entries as Synapse Files to an Evaluation queue ("Evaluation" for short) which you manage.  You can create a new Evaluation using our R or Python client.  You may create multiple Evaluation queues to support sub-challenges having different types of submissions.  You may also define submission 'rounds' (start date, round duration, and number of rounds) with optional submission quota (maximum submissions per participant or team) for each Evaluation queue.
+
+``` Python
+evaluation = Evaluation(name="My Example Challenge",
+	  					description="Short description of challenge queue",
+					    status="OPEN",
+					    quota={'submissionLimit':3}, #Sets the number of submissions allowed per participant/team
+					    contentSource="syn7824172", #Your synapse project id
+					    submissionInstructionsMessage="Instructions on submission format...",
+					    submissionReceiptMessage="Thanks for submitting to My Example Challenge!")
+syn.store(evaluation)
+```
+
+```R
+evaluation <- Evaluation(name="My Example Challenge",
+                  description="Short description of challenge queue",
+                  status="OPEN",
+                  quota=synapseClient:::SubmissionQuota(submissionLimit=3), #Sets the number of submissions allowed per participant/team
+                  contentSource="syn7824172", #Your synapse project id
+                  submissionInstructionsMessage="Instructions on submission format...",
+                  submissionReceiptMessage="Thanks for submitting to My Example Challenge!")
+synStore(evaluation)
+```
 
 ### Share the Evaluation Queue with Participants
 An Evaluation has a "contentSource" field which during creation should be set the Synapse ID of your challenge project.  Afterwards your project will have a "Challenge Admin" tab next to the Wiki and Files tabs.  Your new Evaluation(s) will appear in a list.  Click on an Evaluation will open a sharing tab.  The sharing levels are: Administer, "Can score", "Can Submit", and "Can view."  Give "Can Submit" to the Team or individuals who will be participating in the challenge.
