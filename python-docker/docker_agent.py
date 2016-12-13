@@ -6,10 +6,10 @@ import zipfile
 import os
 
 #Synapse Id of Challenge
-CHALLENGE_SYN_ID = "syn4586419"
+CHALLENGE_SYN_ID = "syn1235"
 #Synapse Id of directory that you want the log files to go into
-CHALLENGE_LOG_FOLDER = "syn4990358"
-CHALLENGE_PREDICTION_FOLDER = "syn4990358"
+CHALLENGE_LOG_FOLDER = "syn12345"
+CHALLENGE_PREDICTION_FOLDER = "syn1235"
 #These are the volumes that you want to mount onto your docker container
 OUTPUT_DIR = '/home/ubuntu/output'
 TESTDATA_DIR = '/home/ubuntu/test-data'
@@ -25,7 +25,7 @@ CHALLENGE_NAME = "Example Synapse Challenge"
 
 ## Synapse user IDs of the challenge admins who will be notified by email
 ## about errors in the scoring script
-ADMIN_USER_IDS = ["3324230"]
+ADMIN_USER_IDS = ['123234']
 
 
 evaluation_queues = [
