@@ -1,7 +1,34 @@
-This guide is meant to help challenge organizers create a space within Synapse to host the challenge, giving participants a place to learn about the challenge, join the challenge community, submit entries, track progress and view results.
+#Submitting to challenges
+One major part of the challenge is ofcourse submitting to the challenge itself.  There are multiple ways a participant can submit to a challenge by using the R, python or web client.  Below is a quick tutorial on how to submit to a challenge.  Most challenge queues will be labeled by `challengename-subchallenge#` as a challenge may have different questions that it may want participants to answer.  
+
+To submit to a challenge, one must have uploaded an entity first to their project and know the evaluation id of the subchallenge you are trying to submit to.  This number can be found in the challenge tab of the challenge site.  In these R and python examples, we will be uploading a file to an example project then submitting that file to the challenge. 
+###Python
+```
+import synapseclient
+from synapseclient import File
+mySubmission = File("/path/to/submission.csv",parent = "syn12345")
+mySub = syn.store(mySubmission)
+
+submission = syn.submit(evaluationId, entity, name='Our Final Answer', team='Blue Team')
+#name: is the a name for the submission
+#team: In the case of challenges, a team can optionally be provided to give credit to members of the team that contributed to the submission. The team must be registered for the challenge with which the given evaluation is associated. The caller must be a member of the submitting team.
+```
+
+
+
+
+
+#Challenge technical support
+
+
+
+
 
 
 # Setting up a DREAM challenge infrastructure
+
+This guide is meant to help challenge organizers create a space within Synapse to host the challenge, giving participants a place to learn about the challenge, join the challenge community, submit entries, track progress and view results.
+
 ## Creating Teams
 In Synapse, Teams are publicly viewable groups of users.  Teams may be given access to projects, data files, and Evaluation submission queues as a group.  Using a Team for a challenge allows you to see who is participating and to conveniently control access to challenge resources.  **All challenges require a challenge participant, challenge pre-registrant, and administrator team.**
 
@@ -65,7 +92,7 @@ You will be able to access the challenge Id by doing
 challenge = syn.restGET('/entity/syn12345/challenge')
 challenge.id
 ```
-### R:
+### R
 ```
 library(synapseClient)
 synapseLogin()
@@ -153,7 +180,8 @@ There are cases in which there are no human data concerns but for which a pop-up
 ## Create an Evaluation Queue for Submissions
 Challenge participants submit their entries as Synapse Files to an Evaluation queue ("Evaluation" for short) which you manage.  You can create a new Evaluation using our R or Python client.  You may create multiple Evaluation queues to support sub-challenges having different types of submissions.  You may also define submission 'rounds' (start date, round duration, and number of rounds) with optional submission quota (maximum submissions per participant or team) for each Evaluation queue.
 
-``` Python
+###Python
+```
 evaluation = Evaluation(name="My Example Challenge",
 	  					description="Short description of challenge queue",
 					    status="OPEN",
@@ -163,8 +191,8 @@ evaluation = Evaluation(name="My Example Challenge",
 					    submissionReceiptMessage="Thanks for submitting to My Example Challenge!")
 syn.store(evaluation)
 ```
-
-```R
+###R
+```
 evaluation <- Evaluation(name="My Example Challenge",
                   description="Short description of challenge queue",
                   status="OPEN",
@@ -184,7 +212,8 @@ Share your Evaluations with the service account 'evaluationstatistics', giving '
 
 One way to enable statistics is with the following lines of Python:
 
-``` Python
+###Python
+```
 evaluation = syn.getEvaluation(3317421)
 syn.setPermissions(evaluation, principalId=3321925, accessType=['READ_PRIVATE_SUBMISSION', 'READ', 'UPDATE_SUBMISSION'])
 ```
@@ -226,7 +255,8 @@ for pasting into the wiki editor.  In the "Challenge Admin" control, described a
 
 ## Link results to participants' project spaces
 If using a "live leader board", simply add a column whose value is "entityId".  This will add a column to the table containing hyperlinks to the submitter's home project.  There they can add a wiki describing their algorithm.  If using a static leader board (wiki table), you may retrieve the entity IDs from the submissions and add them in the wiki editor.  To get the link for each submission, you may use this R script:
-```r
+### R
+```
 library(synapseClient)
 synapseLogin()
 # give a list of submission IDs, for example
