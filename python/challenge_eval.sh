@@ -4,6 +4,7 @@ cd ./
 #---------------------
 #Validate submissions
 #---------------------
+#Remove --send-messages to do rescoring without sending emails to participants
 python challenge.py -u "synapse user here" --send-messages --notifications validate --all >> log/score.log 2>&1
 
 #--------------------
