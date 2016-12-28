@@ -89,6 +89,18 @@ def get_user_name(profile):
         names.append(profile['userName'])
     return " ".join(names)
 
+def update_single_submission_status(status, add_annotations):
+    for keys in add_annotations:
+        if status.annotations.get(keys) is not None:
+            for annots in add_annotations[keys]:
+                total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
+                if len(total_annots) == 1:
+                    total_annots[0]['value'] = annots['value']
+                else:
+                    status.annotations[keys].extend([annots])
+        else:
+            status.annotations[keys] = add_annotations[keys]
+    return(status)
 
 def update_submissions_status_batch(evaluation, statuses):
     """
@@ -182,16 +194,7 @@ def validate(evaluation, dry_run=False):
         if not is_valid:
             failure_reason = {"FAILURE_REASON":validation_message}
             add_annotations = synapseclient.annotations.to_submission_status_annotations(failure_reason,is_private=True)
-            for keys in add_annotations:
-                if status.annotations.get(keys) is not None:
-                    for annots in add_annotations[keys]:
-                        total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
-                        if len(total_annots) == 1:
-                            total_annots[0]['value'] = annots['value']
-                        else:
-                            status.annotations[keys].extend([annots])
-                else:
-                    status.annotations[keys] = add_annotations[keys]
+            status = update_single_submission_status(status, add_annotations)
 
         if not dry_run:
             status = syn.store(status)
@@ -251,17 +254,8 @@ def score(evaluation, dry_run=False):
             else:
                 score['team'] = '?'
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
-            for keys in add_annotations:
-                if status.annotations.get(keys) is not None:
-                    for annots in add_annotations[keys]:
-                        total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
-                        if len(total_annots) == 1:
-                            total_annots[0]['value'] = annots['value']
-                        else:
-                            status.annotations[keys].extend([annots])
-                else:
-                    status.annotations[keys] = add_annotations[keys]
-            #status.annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
+            status = update_single_submission_status(status, add_annotations)
+
             status.status = "SCORED"
             ### Add in DATE as a public annotation and change team annotation to not private
             ## if there's a table configured, update it
