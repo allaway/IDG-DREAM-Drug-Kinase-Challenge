@@ -38,6 +38,8 @@ def validate_func(submission, goldstandard):
     ## MUST USE ASSERTION ERRORS!!! 
     ##eg.
     ## assert os.path.basename(submission.filePath) == "prediction.tsv", "Submission file must be named prediction.tsv"
+    ## or raise AssertionError()...
+    ## Only assertion errors will be returned to participants, all other errors will be returned to the admin
     return(True,"Passed Validation")
 
 def score1(submission, goldstandard):
