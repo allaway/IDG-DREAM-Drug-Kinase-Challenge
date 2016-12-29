@@ -91,15 +91,18 @@ def get_user_name(profile):
 
 def update_single_submission_status(status, add_annotations):
     for keys in add_annotations:
-        if status.annotations.get(keys) is not None:
-            for annots in add_annotations[keys]:
-                total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
-                if len(total_annots) == 1:
-                    total_annots[0]['value'] = annots['value']
-                else:
-                    status.annotations[keys].extend([annots])
+        if status.get("annotations") is not None:
+            if status.annotations.get(keys) is not None:
+                for annots in add_annotations[keys]:
+                    total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
+                    if len(total_annots) == 1:
+                        total_annots[0]['value'] = annots['value']
+                    else:
+                        status.annotations[keys].extend([annots])
+            else:
+                status.annotations[keys] = add_annotations[keys]
         else:
-            status.annotations[keys] = add_annotations[keys]
+            status.annotations = add_annotations
     return(status)
 
 def update_submissions_status_batch(evaluation, statuses):
