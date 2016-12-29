@@ -18,7 +18,6 @@ CHALLENGE_NAME = ""
 ADMIN_USER_IDS = []
 
 
-
 ## Each question in your challenge should have an evaluation queue through
 ## which participants can submit their predictions or models. The queues
 ## should specify the challenge project as their content source. Queues
@@ -33,31 +32,36 @@ ADMIN_USER_IDS = []
 ## every time the script starts and you can link the challenge queues to
 ## the correct scoring/validation functions.  Predictions will be validated and 
 
-def validate_func(submission):
+def validate_func(submission, goldstandard):
     ##Read in submission (submission.filePath)
     ##Validate submission
     ## MUST USE ASSERTION ERRORS!!! 
     ##eg.
     ## assert os.path.basename(submission.filePath) == "prediction.tsv", "Submission file must be named prediction.tsv"
+    return(True,"Passed Validation")
 
-def score1(submission):
+def score1(submission, goldstandard):
     ##Read in submission (submission.filePath)
     ##Score against goldstandard
+    return(score1, score2, score3)
 
-def score2(submission):
+def score2(submission, goldstandard):
     ##Read in submission (submission.filePath)
     ##Score against goldstandard
+    return(score1, score2, score3)
 
 evaluation_queues = [
     {
         'id':1,
         'scoring_func':score1
         'validation_func':validate_func
+        'goldstandard':'path/to/sc1gold.txt'
     },
     {
         'id':1,
         'scoring_func':score2
         'validation_func':validate_func
+        'goldstandard':'path/to/sc2gold.txt'
 
     }
 ]
@@ -96,9 +100,9 @@ def validate_submission(evaluation, submission):
               validation fails or throws exception
     """
     config = evaluation_queue_by_id[int(evaluation.id)]
-    validate = config['validation_func'][submission]
+    validated, validation_message = config['validation_func'](submission, config['goldstandard'])
 
-    return True, "Looks OK to me!"
+    return True, validation_message
 
 
 def score_submission(evaluation, submission):
@@ -108,7 +112,9 @@ def score_submission(evaluation, submission):
     :returns: (score, message) where score is a dict of stats and message
               is text for display to user
     """
-    import random
-    return (dict(score=random.random(), rmse=random.random(), auc=random.random()), "You did fine!")
+    config = evaluation_queue_by_id[int(evaluation.id)]
+    score = config['scoring_func'](submission, config['goldstandard'])
+    #Make sure to round results to 3 or 4 digits
+    return (dict(score=round(score[0],4), rmse=score[1], auc=score[2]), "You did fine!")
 
 
