@@ -208,9 +208,13 @@ def validate(evaluation, dry_run=False):
                 submission_id=submission.id,
                 submission_name=submission.name)
         else:
+            if isinstance(ex1, AssertionError):
+                sendTo = [submission.userId]
+            else:
+                sendTo = conf.ADMIN_USER_IDS
 
             messages.validation_failed(
-                userIds=[submission.userId],
+                userIds= sendTo,
                 username=get_user_name(profile),
                 queue_name=evaluation.name,
                 submission_id=submission.id,
@@ -290,7 +294,7 @@ def score(evaluation, dry_run=False):
                 submission_id=submission.id)
         else:
             messages.scoring_error(
-                userIds=[submission.userId],
+                userIds=conf.ADMIN_USER_IDS,
                 message=message,
                 username=get_user_name(profile),
                 queue_name=evaluation.name,
