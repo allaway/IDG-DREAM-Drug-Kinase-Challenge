@@ -215,7 +215,7 @@ def validate(evaluation, dry_run=False):
 
             messages.validation_failed(
                 userIds= sendTo,
-                username=get_user_name(profile),
+                username="VALIDATION SCRIPT ERROR!!!",
                 queue_name=evaluation.name,
                 submission_id=submission.id,
                 submission_name=submission.name,

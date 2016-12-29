@@ -17,6 +17,8 @@ CHALLENGE_NAME = ""
 ## about errors in the scoring script
 ADMIN_USER_IDS = []
 
+
+
 ## Each question in your challenge should have an evaluation queue through
 ## which participants can submit their predictions or models. The queues
 ## should specify the challenge project as their content source. Queues
@@ -28,9 +30,39 @@ ADMIN_USER_IDS = []
 ## ...and found like this:
 ##   evaluations = list(syn.getEvaluationByContentSource('syn3375314'))
 ## Configuring them here as a list will save a round-trip to the server
-## every time the script starts.
-evaluation_queues = []
+## every time the script starts and you can link the challenge queues to
+## the correct scoring/validation functions.  Predictions will be validated and 
+
+def validate_func(submission):
+    ##Read in submission (submission.filePath)
+    ##Validate submission
+    ## MUST USE ASSERTION ERRORS!!! 
+    ##eg.
+    ## assert os.path.basename(submission.filePath) == "prediction.tsv", "Submission file must be named prediction.tsv"
+
+def score1(submission):
+    ##Read in submission (submission.filePath)
+    ##Score against goldstandard
+
+def score2(submission):
+    ##Read in submission (submission.filePath)
+    ##Score against goldstandard
+
+evaluation_queues = [
+    {
+        'id':1,
+        'scoring_func':score1
+        'validation_func':validate_func
+    },
+    {
+        'id':1,
+        'scoring_func':score2
+        'validation_func':validate_func
+
+    }
+]
 evaluation_queue_by_id = {q['id']:q for q in evaluation_queues}
+
 
 ## define the default set of columns that will make up the leaderboard
 LEADERBOARD_COLUMNS = [
@@ -63,6 +95,9 @@ def validate_submission(evaluation, submission):
     :returns: (True, message) if validated, (False, message) if
               validation fails or throws exception
     """
+    config = evaluation_queue_by_id[int(evaluation.id)]
+    validate = config['validation_func'][submission]
+
     return True, "Looks OK to me!"
 
 
