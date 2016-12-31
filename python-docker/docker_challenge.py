@@ -51,7 +51,7 @@ import warnings
 import docker 
 
 try:
-    import docker_agent as conf
+    import docker_challenge_config as conf
 except Exception as ex1:
     sys.stderr.write("\nPlease configure your docker agent. See docker_agent.template.py for an example.\n\n")
     raise ex1
@@ -90,6 +90,21 @@ def get_user_name(profile):
         names.append(profile['userName'])
     return " ".join(names)
 
+def update_single_submission_status(status, add_annotations):
+    for keys in add_annotations:
+        if status.get("annotations") is not None:
+            if status.annotations.get(keys) is not None:
+                for annots in add_annotations[keys]:
+                    total_annots = filter(lambda input: input.get('key', None) == annots['key'], status.annotations[keys])
+                    if len(total_annots) == 1:
+                        total_annots[0]['value'] = annots['value']
+                    else:
+                        status.annotations[keys].extend([annots])
+            else:
+                status.annotations[keys] = add_annotations[keys]
+        else:
+            status.annotations = add_annotations
+    return(status)
 
 def update_submissions_status_batch(evaluation, statuses):
     """
@@ -170,6 +185,7 @@ def validate(evaluation, dry_run=False):
         submission = syn.getSubmission(submission)
 
         print "validating", submission.id, submission.name
+        ex = None
         try:
             is_valid, validation_message = conf.validate_docker(evaluation, submission)
         except Exception as ex1:
@@ -179,6 +195,11 @@ def validate(evaluation, dry_run=False):
             validation_message = str(ex1)
 
         status.status = "VALIDATED" if is_valid else "INVALID"
+
+        if not is_valid:
+            failure_reason = {"FAILURE_REASON":validation_message}
+            add_annotations = synapseclient.annotations.to_submission_status_annotations(failure_reason,is_private=True)
+            status = update_single_submission_status(status, add_annotations)
 
         if not dry_run:
             status = syn.store(status)
@@ -193,6 +214,11 @@ def validate(evaluation, dry_run=False):
                 submission_id=submission.id,
                 submission_name=submission.name)
         else:
+            if isinstance(ex1, AssertionError):
+                sendTo = [submission.userId]
+            else:
+                sendTo = conf.ADMIN_USER_IDS
+
             messages.validation_failed(
                 userIds=[submission.userId],
                 username=get_user_name(profile),
@@ -237,14 +263,9 @@ def score(evaluation, dry_run=False):
             else:
                 score['team'] = '?'
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
-            for i in add_annotations:
-                if status.annotations.get(i) is not None:
-                    status.annotations[i].extend(add_annotations[i])
-                else:
-                    status.annotations[i] = add_annotations[i]
-            #status.annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
+            status = update_single_submission_status(status, add_annotations)
+
             status.status = "SCORED"
-            ### Add in DATE as a public annotation and change team annotation to not private
             ## if there's a table configured, update it
             if not dry_run and evaluation.id in conf.leaderboard_tables:
                 update_leaderboard_table(conf.leaderboard_tables[evaluation.id], submission, fields=score, dry_run=False)
@@ -277,9 +298,9 @@ def score(evaluation, dry_run=False):
                 submission_id=submission.id)
         else:
             messages.scoring_error(
-                userIds=[submission.userId],
+                userIds=conf.ADMIN_USER_IDS,
                 message=message,
-                username=get_user_name(profile),
+                username="Challenge Administrator,",
                 queue_name=evaluation.name,
                 submission_name=submission.name,
                 submission_id=submission.id)
