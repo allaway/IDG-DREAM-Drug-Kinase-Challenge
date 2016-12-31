@@ -182,7 +182,7 @@ def validate(evaluation, dry_run=False):
         ## refetch the submission so that we get the file path
         ## to be later replaced by a "downloadFiles" flag on getSubmissionBundles
         submission = syn.getSubmission(submission)
-
+        ex1 = None #Must define ex1 in case there is no error
         print "validating", submission.id, submission.name
         try:
             is_valid, validation_message = conf.validate_submission(evaluation, submission)
@@ -218,7 +218,7 @@ def validate(evaluation, dry_run=False):
 
             messages.validation_failed(
                 userIds= sendTo,
-                username="VALIDATION SCRIPT ERROR!!!",
+                username="Challenge Administrator,",
                 queue_name=evaluation.name,
                 submission_id=submission.id,
                 submission_name=submission.name,
@@ -299,7 +299,7 @@ def score(evaluation, dry_run=False):
             messages.scoring_error(
                 userIds=conf.ADMIN_USER_IDS,
                 message=message,
-                username=get_user_name(profile),
+                username="Challenge Administrator,",
                 queue_name=evaluation.name,
                 submission_name=submission.name,
                 submission_id=submission.id)
