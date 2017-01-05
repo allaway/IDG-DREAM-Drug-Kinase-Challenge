@@ -168,7 +168,7 @@ class Query(object):
         return values
 
 
-def validate(evaluation, dry_run=False):
+def validate(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -229,7 +229,7 @@ def validate(evaluation, dry_run=False):
                 message=validation_message)
 
 
-def score(evaluation, dry_run=False):
+def score(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -512,9 +512,9 @@ def command_reset(args):
 def command_validate(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            validate(queue_info['id'], dry_run=args.dry_run)
+            validate(queue_info['id'], args.cancel, dry_run=args.dry_run)
     elif args.evaluation:
-        validate(args.evaluation, dry_run=args.dry_run)
+        validate(args.evaluation, args.cancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
@@ -522,9 +522,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            score(queue_info['id'], dry_run=args.dry_run)
+            score(queue_info['id'], args.cancel, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, dry_run=args.dry_run)
+        score(args.evaluation, args.cancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
@@ -594,11 +594,13 @@ def main():
     parser_validate = subparsers.add_parser('validate', help="Validate all RECEIVED submissions to an evaluation")
     parser_validate.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None, )
     parser_validate.add_argument("--all", action="store_true", default=False)
+    parser_validate.add_argument("--canCancel", action="store_true", default=False)
     parser_validate.set_defaults(func=command_validate)
 
     parser_score = subparsers.add_parser('score', help="Score all VALIDATED submissions to an evaluation")
     parser_score.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None)
     parser_score.add_argument("--all", action="store_true", default=False)
+    parser_score.add_argument("--canCancel", action="store_true", default=False)
     parser_score.set_defaults(func=command_score)
 
     parser_rank = subparsers.add_parser('rank', help="Rank all SCORED submissions to an evaluation")

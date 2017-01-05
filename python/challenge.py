@@ -609,6 +609,7 @@ def main():
     parser_score = subparsers.add_parser('score', help="Score all VALIDATED submissions to an evaluation")
     parser_score.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None)
     parser_score.add_argument("--all", action="store_true", default=False)
+    parser_score.add_argument("--canCancel", action="store_true", default=False)
     parser_score.set_defaults(func=command_score)
 
     parser_rank = subparsers.add_parser('rank', help="Rank all SCORED submissions to an evaluation")
