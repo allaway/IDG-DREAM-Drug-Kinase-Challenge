@@ -167,7 +167,7 @@ class Query(object):
         return values
 
 
-def validate(evaluation, dry_run=False):
+def validate(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -175,7 +175,6 @@ def validate(evaluation, dry_run=False):
     print "\n\nValidating", evaluation.id, evaluation.name
     print "-" * 60
     sys.stdout.flush()
-
 
     for submission, status in syn.getSubmissionBundles(evaluation, status='RECEIVED'):
 
@@ -227,7 +226,7 @@ def validate(evaluation, dry_run=False):
 
 
 
-def score(evaluation, dry_run=False):
+def score(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -532,9 +531,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            score(queue_info['id'], dry_run=args.dry_run)
+            score(queue_info['id'], args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, dry_run=args.dry_run)
+        score(args.evaluation, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
