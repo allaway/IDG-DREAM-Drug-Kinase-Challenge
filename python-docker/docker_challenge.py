@@ -168,7 +168,7 @@ class Query(object):
         return values
 
 
-def validate(evaluation, canCancel, dry_run=False):
+def validate(evaluation, syn, client, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -229,7 +229,7 @@ def validate(evaluation, canCancel, dry_run=False):
                 message=validation_message)
 
 
-def score(evaluation, canCancel, dry_run=False):
+def score(evaluation, syn, client, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -512,9 +512,9 @@ def command_reset(args):
 def command_validate(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            validate(queue_info['id'], args.cancel, dry_run=args.dry_run)
+            validate(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        validate(args.evaluation, args.cancel, dry_run=args.dry_run)
+        validate(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
@@ -522,9 +522,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            score(queue_info['id'], args.cancel, dry_run=args.dry_run)
+            score(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, args.cancel, dry_run=args.dry_run)
+        score(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
@@ -640,7 +640,12 @@ def main():
         if not args.password:
             args.password = os.environ.get('SYNAPSE_PASSWORD', None)
         syn.login(email=args.user, password=args.password)
-        ## initialize messages
+        #Add client into arguments
+        client = docker.from_env()
+        client.login(args.user, args.password, registry="http://docker.synapse.org")
+        #Add syn and client into arguments
+        args.syn = syn
+        args.client = client
         messages.syn = syn
         messages.dry_run = args.dry_run
         messages.send_messages = args.send_messages
