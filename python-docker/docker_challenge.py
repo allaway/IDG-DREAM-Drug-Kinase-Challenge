@@ -195,7 +195,8 @@ def validate(evaluation, dry_run=False):
             validation_message = str(ex1)
 
         status.status = "VALIDATED" if is_valid else "INVALID"
-
+        if canCancel:
+            status.canCancel = True
         if not is_valid:
             failure_reason = {"FAILURE_REASON":validation_message}
             add_annotations = synapseclient.annotations.to_submission_status_annotations(failure_reason,is_private=True)
@@ -264,7 +265,6 @@ def score(evaluation, dry_run=False):
                 score['team'] = '?'
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
             status = update_single_submission_status(status, add_annotations)
-
             status.status = "SCORED"
             ## if there's a table configured, update it
             if not dry_run and evaluation.id in conf.leaderboard_tables:
@@ -300,7 +300,7 @@ def score(evaluation, dry_run=False):
             messages.scoring_error(
                 userIds=conf.ADMIN_USER_IDS,
                 message=message,
-                username="Challenge Administrator,",
+                username="Challenge Administrator",
                 queue_name=evaluation.name,
                 submission_name=submission.name,
                 submission_id=submission.id)

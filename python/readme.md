@@ -5,7 +5,27 @@ For those writing Synapse challenge scoring applications in Python, these script
 
 ## Creating a scoring script
 
-Starting with the scripts in this folder, simple challenges can be created just by editing **challenge_config.py** and **messages.py**. You'll need to add an evaluation queue for each question in your challenge and write appropriate validation and scoring functions. Then, customize the messages with challenge specific help for your solvers.
+Starting with the scripts in this folder, simple challenges can be set up by creating a **challenge_config.py** with **challenge_config.template.py** and editting the **messages.py**. You'll need to add an evaluation queue for each question in your challenge and write appropriate validation and scoring functions. Then, customize the messages with challenge specific help for your solvers.
+
+In the **challenge_config.template.py**, you can add in separate `validate`, `score1`, `score2`, and `score...` functions for each question in your challenge.  You can name these functions anything you want as long as you set up a evaluation queue and function or file mapping.  
+```
+evaluation_queues = [
+    {
+        'id':1,
+        'scoring_func':score1
+        'validation_func':validate_func
+        'goldstandard':'path/to/sc1gold.txt'
+    },
+    {
+        'id':2,
+        'scoring_func':score2
+        'validation_func':validate_func
+        'goldstandard':'path/to/sc2gold.txt'
+
+    }
+]
+evaluation_queue_by_id = {q['id']:q for q in evaluation_queues}
+```
 
 ## Example
 

@@ -32,7 +32,7 @@ ADMIN_USER_IDS = []
 ## every time the script starts and you can link the challenge queues to
 ## the correct scoring/validation functions.  Predictions will be validated and 
 
-def validate_func(submission, goldstandard):
+def validate_func(submission, goldstandard_path):
     ##Read in submission (submission.filePath)
     ##Validate submission
     ## MUST USE ASSERTION ERRORS!!! 
@@ -42,12 +42,12 @@ def validate_func(submission, goldstandard):
     ## Only assertion errors will be returned to participants, all other errors will be returned to the admin
     return(True,"Passed Validation")
 
-def score1(submission, goldstandard):
+def score1(submission, goldstandard_path):
     ##Read in submission (submission.filePath)
     ##Score against goldstandard
     return(score1, score2, score3)
 
-def score2(submission, goldstandard):
+def score2(submission, goldstandard_path):
     ##Read in submission (submission.filePath)
     ##Score against goldstandard
     return(score1, score2, score3)
@@ -57,13 +57,13 @@ evaluation_queues = [
         'id':1,
         'scoring_func':score1
         'validation_func':validate_func
-        'goldstandard':'path/to/sc1gold.txt'
+        'goldstandard_path':'path/to/sc1gold.txt'
     },
     {
-        'id':1,
+        'id':2,
         'scoring_func':score2
         'validation_func':validate_func
-        'goldstandard':'path/to/sc2gold.txt'
+        'goldstandard_path':'path/to/sc2gold.txt'
 
     }
 ]
@@ -102,7 +102,7 @@ def validate_submission(evaluation, submission):
               validation fails or throws exception
     """
     config = evaluation_queue_by_id[int(evaluation.id)]
-    validated, validation_message = config['validation_func'](submission, config['goldstandard'])
+    validated, validation_message = config['validation_func'](submission, config['goldstandard_path'])
 
     return True, validation_message
 
@@ -115,7 +115,7 @@ def score_submission(evaluation, submission):
               is text for display to user
     """
     config = evaluation_queue_by_id[int(evaluation.id)]
-    score = config['scoring_func'](submission, config['goldstandard'])
+    score = config['scoring_func'](submission, config['goldstandard_path'])
     #Make sure to round results to 3 or 4 digits
     return (dict(score=round(score[0],4), rmse=score[1], auc=score[2]), "You did fine!")
 
