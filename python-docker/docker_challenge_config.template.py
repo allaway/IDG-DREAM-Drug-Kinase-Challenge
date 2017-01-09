@@ -73,7 +73,11 @@ def dockerValidate(submission):
 
     predFolder = syn.store(Folder(submission.id, parent = CHALLENGE_LOG_PREDICTION_FOLDER))
     for participant in submission.contributors:
-        syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = adminAccess)
+        if participant['principalId'] in ADMIN_USER_IDS: 
+            access = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'DOWNLOAD', 'PARTICIPATE', 'SUBMIT']
+        else:
+            access = ["READ"]
+        syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
 
     return(True, "Your submission has been validated!  As your submission is being scored, please go here: https://www.synapse.org/#!Synapse:%s to check on your log files and resulting prediction files." % predFolder.id)
 
