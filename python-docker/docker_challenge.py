@@ -168,7 +168,7 @@ class Query(object):
         return values
 
 
-def validate(evaluation, dry_run=False):
+def validate(evaluation, syn, client, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -185,16 +185,19 @@ def validate(evaluation, dry_run=False):
         submission = syn.getSubmission(submission)
 
         print "validating", submission.id, submission.name
-        ex = None
+        ex1 = None
         try:
-            is_valid, validation_message = conf.validate_docker(evaluation, submission)
+            is_valid, validation_message = conf.validate_docker(evaluation, submission, syn, client)
         except Exception as ex1:
             is_valid = False
             print "Exception during validation:", type(ex1), ex1, ex1.message
             traceback.print_exc()
             validation_message = str(ex1)
+
         #Status should be OPEN as the scoring harness will use VALIDATED/SCORED
         status.status = "OPEN" if is_valid else "INVALID"
+        if canCancel:
+            status.canCancel = True
 
         if not is_valid:
             failure_reason = {"FAILURE_REASON":validation_message}
@@ -228,7 +231,7 @@ def validate(evaluation, dry_run=False):
                 message=validation_message)
 
 
-def score(evaluation, dry_run=False):
+def score(evaluation, syn, client, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -238,15 +241,17 @@ def score(evaluation, dry_run=False):
     sys.stdout.flush()
 
     for submission, status in syn.getSubmissionBundles(evaluation, status='OPEN'):
-
+        if canCancel:
+            status.canCancel = True
+        status.status = "EVALUATION_IN_PROGRESS"
+        status = syn.store(status)
         status.status = "INVALID"
-
         ## refetch the submission so that we get the file path
         ## to be later replaced by a "downloadFiles" flag on getSubmissionBundles
         submission = syn.getSubmission(submission)
 
         try:
-            score, message = conf.run_docker(evaluation, submission)
+            score, message = conf.run_docker(evaluation, submission, syn, client)
 
             print "scored:", submission.id, submission.name, submission.userId, score
 
@@ -264,12 +269,12 @@ def score(evaluation, dry_run=False):
                 score['team'] = '?'
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
             status = update_single_submission_status(status, add_annotations)
-
             if score['PREDICTION_FILE'] is None:
                 status.status = "INVALID"
             else:
                 #Status should be accepted because the docker agent is different from the scoring harness
                 status.status = "ACCEPTED" 
+
             ## if there's a table configured, update it
             if not dry_run and evaluation.id in conf.leaderboard_tables:
                 update_leaderboard_table(conf.leaderboard_tables[evaluation.id], submission, fields=score, dry_run=False)
@@ -304,7 +309,7 @@ def score(evaluation, dry_run=False):
             messages.scoring_error(
                 userIds=conf.ADMIN_USER_IDS,
                 message=message,
-                username="Challenge Administrator,",
+                username="Challenge Administrator",
                 queue_name=evaluation.name,
                 submission_name=submission.name,
                 submission_id=submission.id)
@@ -516,9 +521,9 @@ def command_reset(args):
 def command_validate(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            validate(queue_info['id'], dry_run=args.dry_run)
+            validate(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        validate(args.evaluation, dry_run=args.dry_run)
+        validate(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
@@ -526,9 +531,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            score(queue_info['id'], dry_run=args.dry_run)
+            score(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, dry_run=args.dry_run)
+        score(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
@@ -598,11 +603,13 @@ def main():
     parser_validate = subparsers.add_parser('validate', help="Validate all RECEIVED submissions to an evaluation")
     parser_validate.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None, )
     parser_validate.add_argument("--all", action="store_true", default=False)
+    parser_validate.add_argument("--canCancel", action="store_true", default=False)
     parser_validate.set_defaults(func=command_validate)
 
     parser_score = subparsers.add_parser('score', help="Score all VALIDATED submissions to an evaluation")
     parser_score.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None)
     parser_score.add_argument("--all", action="store_true", default=False)
+    parser_score.add_argument("--canCancel", action="store_true", default=False)
     parser_score.set_defaults(func=command_score)
 
     parser_rank = subparsers.add_parser('rank', help="Rank all SCORED submissions to an evaluation")
@@ -642,7 +649,12 @@ def main():
         if not args.password:
             args.password = os.environ.get('SYNAPSE_PASSWORD', None)
         syn.login(email=args.user, password=args.password)
-        ## initialize messages
+        #Add client into arguments
+        client = docker.from_env()
+        client.login(args.user, args.password, registry="http://docker.synapse.org")
+        #Add syn and client into arguments
+        args.syn = syn
+        args.client = client
         messages.syn = syn
         messages.dry_run = args.dry_run
         messages.send_messages = args.send_messages

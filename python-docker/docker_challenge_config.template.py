@@ -28,9 +28,22 @@ CHALLENGE_NAME = "Example Synapse Challenge"
 ADMIN_USER_IDS = ['123234']
 
 
-evaluation_queues = [
-	{'status': u'OPEN', 'contentSource': u'syn4586419', 'submissionInstructionsMessage': u'To submit to the XYZ Challenge, send a tab-delimited file as described here: https://...', u'createdOn': u'2015-07-01T18:41:43.295Z', 'submissionReceiptMessage': u'Your submission has been received. For further information, consult the leader board at https://...', u'etag': u'a595f04a-c5a2-4b0e-8d1f-003a8c46c0cd', u'ownerId': u'3324230', u'id': u'4586421', 'name': u'Example Synapse Challenge 4f41d8a1-8200-4030-97ae-352bc03577b6'}]
-evaluation_queue_by_id = {q['id']:q for q in evaluation_queues}
+config_evaluations = [
+#Sub-Challenge 1 (12345)
+#Sub-Challenge 2 (23456)
+    {
+        'id':12345,
+        'score_sh':'/score_sc1.sh'
+    },
+    {
+        'id':23456,
+        'score_sh':'/score_sc2.sh'
+    }
+
+]
+
+config_evaluations_map = {ev['id']:ev for ev in config_evaluations}
+
 
 
 def zipdir(path, ziph):
@@ -53,6 +66,9 @@ def dockerValidate(submission):
         client.images.pull(dockerImage)
     except docker.errors.ImageNotFound as e:
         raise AssertionError("Docker pull failed: "+str(e))
+    #Must check docker image size
+    #Send email to me if harddrive is full 
+    #should be stateless, if there needs to be code changes to the docker agent
 
     # must use os.system (Can't pipe with subprocess)
     out = os.system('docker run -it --rm -e="CLI=true" %s [ -e %s ] || (echo "DoesNotExist" && exit 1)' % (dockerImage, scoring_sh))
@@ -70,21 +86,18 @@ def dockerValidate(submission):
         else:
             access = ['READ']
         syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
-	return(True, "Looks OK to me!")
+
+    return(True, "Your submission has been validated!  As your submission is being scored, please go here: https://www.synapse.org/#!Synapse:%s to check on your log files and resulting prediction files." % predFolder)
 
 
-def dockerRun(submission, containerName = None):
+def dockerRun(submission, scoring_sh, syn, client):
+    predFolder = syn.query('select id from folder where parentId == "%s" and name == "%s"' % (CHALLENGE_LOG_PREDICTION_FOLDER,submission.id))
+    predFolderId = predFolder['results'][0]['folder.id']
 
-	client = docker.from_env()
-    #client.login(username, password, registry="http://docker.synapse.org")
-
-	# MM challenge example
-	submission = syn.getSubmission(7841236)
-	#containerName = "testingfoo"
-	dockerDigest = submission.get('dockerDigest')
-	submissionJson = json.loads(submission['entityBundleJSON'])
-	dockerRepo = submissionJson['entity']['repositoryName']
-	dockerImage = dockerRepo + "@" + dockerDigest
+    dockerDigest = submission.get('dockerDigest')
+    submissionJson = json.loads(submission['entityBundleJSON'])
+    dockerRepo = submissionJson['entity']['repositoryName']
+    dockerImage = dockerRepo + "@" + dockerDigest
 
 	#Mount volumes
 	volumes = {}
@@ -110,7 +123,7 @@ def dockerRun(submission, containerName = None):
 				logs = syn.store(ent)
 
 	#Remove container after being done
-	container.remove()
+    container.remove()
     client.images.remove(dockerImage)
     #Zip up predictions and store it into CHALLENGE_PREDICTIONS_FOLDER
     if len(os.listdir(OUTPUT_DIR)) > 0:
@@ -127,6 +140,7 @@ def dockerRun(submission, containerName = None):
     return(prediction_synId, logs.id)
 
 
+
 def validate_docker(evaluation, submission):
 	"""
 	Find the right validation function and validate the submission.
@@ -134,8 +148,9 @@ def validate_docker(evaluation, submission):
 	:returns: (True, message) if validated, (False, message) if
 			  validation fails or throws exception
 	"""
+    config = config_evaluations_map[int(evaluation.id)]
 
-	results = dockerValidate(submission)
+    results = dockerValidate(submission, config['score_sh'], syn, client)
 	return(results)
 
 
@@ -146,9 +161,12 @@ def run_docker(evaluation, submission):
 	:returns: (score, message) where score is a dict of stats and message
 			  is text for display to user
 	"""
-	prediction_synId, log_synId =  dockerRun(submission)
+
+    config = config_evaluations_map[int(evaluation.id)]
+    prediction_synId, log_synId =  dockerRun(submission,config['score_sh'], syn, client)
     if prediction_synId is not None:
         message = "You can find your prediction file here: https://www.synapse.org/#!Synapse:%s" % prediction_synId
     else:
         message = "No prediction file generated, please check your log files!"
     return (dict(PREDICTION_FILE=prediction_synId, LOG_FILE = log_synId), message)
+

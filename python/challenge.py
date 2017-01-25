@@ -169,7 +169,7 @@ class Query(object):
         return values
 
 
-def validate(evaluation, dry_run=False):
+def validate(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -177,7 +177,6 @@ def validate(evaluation, dry_run=False):
     print "\n\nValidating", evaluation.id, evaluation.name
     print "-" * 60
     sys.stdout.flush()
-
 
     for submission, status in syn.getSubmissionBundles(evaluation, status='RECEIVED'):
 
@@ -195,7 +194,8 @@ def validate(evaluation, dry_run=False):
             validation_message = str(ex1)
 
         status.status = "VALIDATED" if is_valid else "INVALID"
-       
+        if canCancel:
+            status.canCancel = True
         if not is_valid:
             failure_reason = {"FAILURE_REASON":validation_message}
             add_annotations = synapseclient.annotations.to_submission_status_annotations(failure_reason,is_private=True)
@@ -230,7 +230,7 @@ def validate(evaluation, dry_run=False):
 
 
 
-def score(evaluation, dry_run=False):
+def score(evaluation, canCancel, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -309,6 +309,16 @@ def score(evaluation, dry_run=False):
                 submission_id=submission.id)
 
     sys.stdout.write('\n')
+
+def invalidateSubmission(evaluation, dry_run=False):
+    if type(evaluation) != Evaluation:
+        evaluation = syn.getEvaluation(evaluation)
+
+    for submission, status in syn.getSubmissionBundles(evaluation):
+        if status.cancelRequested is True:
+            status.status = "INVALID"
+            syn.store(status)
+
 
 
 def create_leaderboard_table(name, columns, parent, evaluation, dry_run=False):
@@ -515,9 +525,9 @@ def command_reset(args):
 def command_validate(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            validate(queue_info['id'], dry_run=args.dry_run)
+            validate(queue_info['id'], args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        validate(args.evaluation, dry_run=args.dry_run)
+        validate(args.evaluation, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
@@ -525,9 +535,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
-            score(queue_info['id'], dry_run=args.dry_run)
+            score(queue_info['id'], args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, dry_run=args.dry_run)
+        score(args.evaluation, args.canCancel, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
@@ -597,11 +607,13 @@ def main():
     parser_validate = subparsers.add_parser('validate', help="Validate all RECEIVED submissions to an evaluation")
     parser_validate.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None, )
     parser_validate.add_argument("--all", action="store_true", default=False)
+    parser_validate.add_argument("--canCancel", action="store_true", default=False)
     parser_validate.set_defaults(func=command_validate)
 
     parser_score = subparsers.add_parser('score', help="Score all VALIDATED submissions to an evaluation")
     parser_score.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None)
     parser_score.add_argument("--all", action="store_true", default=False)
+    parser_score.add_argument("--canCancel", action="store_true", default=False)
     parser_score.set_defaults(func=command_score)
 
     parser_rank = subparsers.add_parser('rank', help="Rank all SCORED submissions to an evaluation")
