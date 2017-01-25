@@ -663,6 +663,11 @@ def main():
     parser_score.add_argument("--canCancel", action="store_true", default=False)
     parser_score.set_defaults(func=command_score)
 
+    parser_dockerstop = subparsers.add_parser('dockerstop', help="Stop all submissions (Docker container) marked cancelRequeste=True")
+    parser_dockerstop.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None, )
+    parser_dockerstop.add_argument("--all", action="store_true", default=False)
+    parser_dockerstop.set_defaults(func=command_dockerstop)
+    
     parser_rank = subparsers.add_parser('rank', help="Rank all SCORED submissions to an evaluation")
     parser_rank.add_argument("evaluation", metavar="EVALUATION-ID", default=None)
     parser_rank.set_defaults(func=command_rank)
