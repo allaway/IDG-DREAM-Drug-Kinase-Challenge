@@ -40,7 +40,36 @@ def zipdir(path, ziph):
 			ziph.write(os.path.join(root, file),os.path.join(root, file).replace(path+"/",""))
 
 def dockerValidate(submission):
-	assert submission.get('dockerDigest') is not None, "Must submit a docker container"
+    submissionJson = json.loads(submission['entityBundleJSON'])
+    assert submissionJson['entity'].get('repositoryName') is not None, "Must submit a docker container"
+    dockerRepo = submissionJson['entity']['repositoryName']
+    #assert dockerRepo.startswith("docker.synapse.org")
+    assert submission.get('dockerDigest') is not None, "Must submit a docker container with a docker sha digest"
+    dockerDigest = submission['dockerDigest']
+    dockerImage = dockerRepo + "@" + dockerDigest
+
+    #Check if docker is able to be pulled
+    try:
+        client.images.pull(dockerImage)
+    except docker.errors.ImageNotFound as e:
+        raise AssertionError("Docker pull failed: "+str(e))
+
+    # must use os.system (Can't pipe with subprocess)
+    out = os.system('docker run -it --rm -e="CLI=true" %s [ -e %s ] || (echo "DoesNotExist" && exit 1)' % (dockerImage, scoring_sh))
+    assert out==0, "%s must exist for your docker container to run" % scoring_sh
+
+    checkExist = syn.query('select id from folder where parentId == "%s" and name == "%s"' % (CHALLENGE_LOG_PREDICTION_FOLDER, submission.id))
+    if checkExist['totalNumberOfResults'] == 0:
+        predFolder = syn.store(Folder(submission.id, parent = CHALLENGE_LOG_PREDICTION_FOLDER))
+        predFolder = predFolder.id
+    else:
+        predFolder = checkExist['results'][0]['folder.id']
+    for participant in submission.contributors:
+        if participant['principalId'] in ADMIN_USER_IDS: 
+            access = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'MODERATE', 'CHANGE_SETTINGS']
+        else:
+            access = ['READ']
+        syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
 	return(True, "Looks OK to me!")
 
 
@@ -82,18 +111,20 @@ def dockerRun(submission, containerName = None):
 
 	#Remove container after being done
 	container.remove()
+    client.images.remove(dockerImage)
+    #Zip up predictions and store it into CHALLENGE_PREDICTIONS_FOLDER
+    if len(os.listdir(OUTPUT_DIR)) > 0:
+        zipf = zipfile.ZipFile(submission.id + '_predictions.zip', 'w', zipfile.ZIP_DEFLATED)
+        zipdir(OUTPUT_DIR, zipf)
+        zipf.close()
 
-	#MUST ADD PERMISSIONS SO PARTICIPANTS CAN SEE THEIR OWN LOG FILE/PREDICTIONS
-
-
-	#Zip up predictions and store it into CHALLENGE_PREDICTIONS_FOLDER
-	zipf = zipfile.ZipFile(submission.id + '_predictions.zip', 'w', zipfile.ZIP_DEFLATED)
-	zipdir(OUTPUT_DIR, zipf)
-	zipf.close()
-
-	ent = File(submission.id + '_predictions.zip', parent = CHALLENGE_PREDICTION_FOLDER)
-	predictions = syn.store(ent)
-	return(predictions.id, logs.id)
+        ent = File(submission.id + '_predictions.zip', parent = predFolderId)
+        predictions = syn.store(ent)
+        prediction_synId = predictions.id
+        os.system("rm -rf %s/*" % OUTPUT_DIR)
+    else:
+        prediction_synId = None
+    return(prediction_synId, logs.id)
 
 
 def validate_docker(evaluation, submission):
@@ -116,4 +147,8 @@ def run_docker(evaluation, submission):
 			  is text for display to user
 	"""
 	prediction_synId, log_synId =  dockerRun(submission)
-	return (dict(predictions=prediction_synId, log_synId = log_synId), "You did fine!")
+    if prediction_synId is not None:
+        message = "You can find your prediction file here: https://www.synapse.org/#!Synapse:%s" % prediction_synId
+    else:
+        message = "No prediction file generated, please check your log files!"
+    return (dict(PREDICTION_FILE=prediction_synId, LOG_FILE = log_synId), message)

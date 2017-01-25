@@ -110,6 +110,8 @@ def update_submissions_status_batch(evaluation, statuses):
     Update statuses in batch. This can be much faster than individual updates,
     especially in rank based scoring methods which recalculate scores for all
     submissions each time a new submission is received.
+
+    Work on the retry logic and have to pull down the submission statuses
     """
 
     for retry in range(BATCH_UPLOAD_RETRY_COUNT):
@@ -213,12 +215,14 @@ def validate(evaluation, dry_run=False):
         else:
             if isinstance(ex1, AssertionError):
                 sendTo = [submission.userId]
+                username = get_user_name(profile)
             else:
                 sendTo = conf.ADMIN_USER_IDS
+                username = "Challenge Administrator"
 
             messages.validation_failed(
                 userIds= sendTo,
-                username="Challenge Administrator,",
+                username=username,
                 queue_name=evaluation.name,
                 submission_id=submission.id,
                 submission_name=submission.name,

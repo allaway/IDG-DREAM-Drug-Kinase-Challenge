@@ -1,3 +1,9 @@
+# Use rpy2 if you have R scoring functions
+# import rpy2.robjects as robjects
+# import os
+# filePath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'getROC.R')
+# robjects.r("source('%s')" % filePath)
+# AUC_pAUC = robjects.r('GetScores')
 ##-----------------------------------------------------------------------------
 ##
 ## challenge specific code and configuration

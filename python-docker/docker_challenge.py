@@ -193,8 +193,8 @@ def validate(evaluation, dry_run=False):
             print "Exception during validation:", type(ex1), ex1, ex1.message
             traceback.print_exc()
             validation_message = str(ex1)
-
-        status.status = "VALIDATED" if is_valid else "INVALID"
+        #Status should be OPEN as the scoring harness will use VALIDATED/SCORED
+        status.status = "OPEN" if is_valid else "INVALID"
 
         if not is_valid:
             failure_reason = {"FAILURE_REASON":validation_message}
@@ -237,7 +237,7 @@ def score(evaluation, dry_run=False):
     print "-" * 60
     sys.stdout.flush()
 
-    for submission, status in syn.getSubmissionBundles(evaluation, status='VALIDATED'):
+    for submission, status in syn.getSubmissionBundles(evaluation, status='OPEN'):
 
         status.status = "INVALID"
 
@@ -265,7 +265,11 @@ def score(evaluation, dry_run=False):
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
             status = update_single_submission_status(status, add_annotations)
 
-            status.status = "SCORED"
+            if score['PREDICTION_FILE'] is None:
+                status.status = "INVALID"
+            else:
+                #Status should be accepted because the docker agent is different from the scoring harness
+                status.status = "ACCEPTED" 
             ## if there's a table configured, update it
             if not dry_run and evaluation.id in conf.leaderboard_tables:
                 update_leaderboard_table(conf.leaderboard_tables[evaluation.id], submission, fields=score, dry_run=False)
@@ -288,7 +292,7 @@ def score(evaluation, dry_run=False):
         ## send message AFTER storing status to ensure we don't get repeat messages
         profile = syn.getUserProfile(submission.userId)
 
-        if status.status == 'SCORED':
+        if status.status == 'ACCEPTED':
             messages.scoring_succeeded(
                 userIds=[submission.userId],
                 message=message,
