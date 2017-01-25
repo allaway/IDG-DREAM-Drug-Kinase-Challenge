@@ -167,6 +167,53 @@ class Query(object):
         self.offset += 1
         return values
 
+def dockerstop(evaluation, syn, client, dry_run=False):
+    if type(evaluation) != Evaluation:
+        evaluation = syn.getEvaluation(evaluation)
+
+    print "\n\nStopping cancelled submissions", evaluation.id, evaluation.name
+    print "-" * 60
+    sys.stdout.flush()
+
+    for submission, status in syn.getSubmissionBundles(evaluation):
+        error = True
+        if status.get("cancelRequested") is not None:
+            if status.cancelRequested is True:
+                print "Stopping", submission.id, submission.name
+                try:
+                    container = client.containers.get(submission.id)
+                    container.kill()
+                    container.remove()
+                except docker.errors.NotFound as ex1:
+                    print "Exception during validation:", type(ex1), ex1, ex1.message
+                    error = False
+                status.status = "CLOSED"
+                status.pop('canCancel')
+                status.pop('cancelRequested')
+                status = syn.store(status)
+
+            profile = syn.getUserProfile(submission.userId)
+            if error:
+                messages.dockerstop_passed(
+                    userIds=[submission.userId],
+                    username=get_user_name(profile),
+                    queue_name=evaluation.name,
+                    submission_id=submission.id,
+                    submission_name=submission.name)
+            else:
+                if isinstance(ex1, docker.errors.NotFound):
+                    sendTo = [submission.userId]
+                    username = get_user_name(profile)
+                else:
+                    sendTo = conf.ADMIN_USER_IDS
+                    username = "Challenge Administrator"
+
+                messages.dockerstop_failed(
+                    userIds= sendTo,
+                    username=username,
+                    queue_name=evaluation.name,
+                    submission_id=submission.id,
+                    submission_name=submission.name)
 
 def validate(evaluation, syn, client, canCancel, dry_run=False):
 
@@ -517,6 +564,14 @@ def command_reset(args):
             if not args.dry_run:
                 print unicode(syn.store(status)).encode('utf-8')
 
+def command_dockerstop(args):
+    if args.all:
+        for queue_info in conf.evaluation_queues:
+            dockerstop(queue_info['id'], args.syn, args.client, dry_run=args.dry_run)
+    elif args.evaluation:
+        dockerstop(args.evaluation, args.syn, args.client, dry_run=args.dry_run)
+    else:
+        sys.stderr.write("\nDocker stop command requires either an evaluation ID or --all to stop all submissions that have cancelRequested = True in all queues of the challenge")
 
 def command_validate(args):
     if args.all:
@@ -527,7 +582,6 @@ def command_validate(args):
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
-
 def command_score(args):
     if args.all:
         for queue_info in conf.evaluation_queues:
@@ -537,10 +591,8 @@ def command_score(args):
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
-
 def command_rank(args):
     raise NotImplementedError('Implement a ranking function for your challenge')
-
 
 def command_leaderboard(args):
     ## show columns specific to an evaluation, if available
@@ -554,10 +606,8 @@ def command_leaderboard(args):
     else:
         query(args.evaluation, columns=leaderboard_cols)
 
-
 def command_archive(args):
     archive(args.evaluation, args.destination, name=args.name, query=args.query)
-
 
 ## ==================================================
 ##  main method
@@ -579,6 +629,7 @@ def main():
     parser.add_argument("--acknowledge-receipt", help="Send confirmation message on passing validation to participants", action="store_true", default=False)
     parser.add_argument("--dry-run", help="Perform the requested command without updating anything in Synapse", action="store_true", default=False)
     parser.add_argument("--debug", help="Show verbose error output from Synapse API calls", action="store_true", default=False)
+    parser.add_argument("--canCancel", action="store_true", default=False)
 
     subparsers = parser.add_subparsers(title="subcommand")
 

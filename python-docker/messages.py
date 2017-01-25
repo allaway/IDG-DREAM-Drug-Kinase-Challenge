@@ -24,6 +24,37 @@ defaults = dict(
 ## Message templates:
 ## Edit to fit your challenge.
 ##---------------------------------------------------------
+dockerstop_failed_subject_template = "Docker stop error in submission to {queue_name}"
+dockerstop_failed_template = """\
+<p>Hello {username},</p>
+
+<p>Sorry, but we were unable to stop your docker container.  Your container has has either been stopped or finished running.</p>
+
+<p>submission name: <b>{submission_name}</b><br>
+submission ID: <b>{submission_id}</b></p>
+
+
+<p>If you have questions, please ask on the forums at {support_forum_url}.</p>
+
+<p>Sincerely,<br>
+{scoring_script}</p>
+"""
+
+dockerstop_passed_subject_template = "Docker stop succeeded to {queue_name}"
+dockerstop_passed_template = """\
+<p>Hello {username},</p>
+
+<p>We have successfully stopped your docker container.</p>
+
+<p>submission name: <b>{submission_name}</b><br>
+submission ID: <b>{submission_id}</b></p>
+
+<p>If you have questions, please ask on the forums at {support_forum_url} or refer to the challenge \
+instructions which can be found at {challenge_instructions_url}.</p>
+
+<p>Sincerely,<br>
+{scoring_script}</p>
+"""
 
 validation_failed_subject_template = "Validation error in submission to {queue_name}"
 validation_failed_template = """\
@@ -138,7 +169,20 @@ formatter = DefaultingFormatter()
 ##---------------------------------------------------------
 ## functions for sending various types of messages
 ##---------------------------------------------------------
+def dockerstop_failed(userIds, **kwargs):
+    if send_messages:
+        return send_message(userIds=userIds, 
+                            subject_template=dockerstop_failed_subject_template,
+                            message_template=dockerstop_failed_template,
+                            kwargs=kwargs)
 
+def dockerstop_passed(userIds, **kwargs):
+    if send_messages:
+        return send_message(userIds=userIds,
+                            subject_template=dockerstop_passed_subject_template,
+                            message_template=dockerstop_passed_template,
+                            kwargs=kwargs)
+        
 def validation_failed(userIds, **kwargs):
     if send_messages:
         return send_message(userIds=userIds, 
