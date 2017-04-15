@@ -2,6 +2,7 @@ import docker
 import json
 import subprocess
 from synapseclient import File
+import synapseutils as synu
 import zipfile
 import os
 
@@ -91,8 +92,10 @@ def dockerValidate(submission):
 
 
 def dockerRun(submission, scoring_sh, syn, client):
-    predFolder = syn.query('select id from folder where parentId == "%s" and name == "%s"' % (CHALLENGE_LOG_PREDICTION_FOLDER,submission.id))
-    predFolderId = predFolder['results'][0]['folder.id']
+    #Make a file view of the prediction folder
+    allSubmissions = synu.walk(syn, CHALLENGE_LOG_PREDICTION_FOLDER)
+    predFolder = allSubmissions.next()
+    predFolderId = [synId for name, synId in predFolder[1] if name == submission.id][0]
 
     dockerDigest = submission.get('dockerDigest')
     submissionJson = json.loads(submission['entityBundleJSON'])
