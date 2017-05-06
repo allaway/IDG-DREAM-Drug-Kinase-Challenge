@@ -45,7 +45,24 @@ config_evaluations = [
 
 config_evaluations_map = {ev['id']:ev for ev in config_evaluations}
 
+def getBearerTokenURL(dockerRequestURL, user, password):
+    initialReq = requests.get(dockerRequestURL)
+    auth_headers = initialReq.headers['Www-Authenticate'].replace('"','').split(",")
+    for head in auth_headers:
+        if head.startswith("Bearer realm="):
+            bearerRealm = head.split('Bearer realm=')[1]
+        elif head.startswith('service='):
+            service = head.split('service=')[1]
+        elif head.startswith('scope='):
+            scope = head.split('scope=')[1]
+    return("{0}?service={1}&scope={2}".format(bearerRealm,service,scope))
 
+def getAuthToken(dockerRequestURL, user, password):
+    bearerTokenURL = getBearerTokenURL(dockerRequestURL, user, password)
+    auth = base64.b64encode(user + ":" + password)
+    bearerTokenRequest = requests.get(bearerTokenURL,
+        headers={'Authorization': 'Basic %s' % auth})
+    return(bearerTokenRequest.json()['token'])
 
 def zipdir(path, ziph):
 	# ziph is zipfile handle
@@ -53,27 +70,28 @@ def zipdir(path, ziph):
 		for file in files:
 			ziph.write(os.path.join(root, file),os.path.join(root, file).replace(path+"/",""))
 
-def dockerValidate(submission):
+def dockerValidate(submission, syn, user, password):
     submissionJson = json.loads(submission['entityBundleJSON'])
     assert submissionJson['entity'].get('repositoryName') is not None, "Must submit a docker container"
-    dockerRepo = submissionJson['entity']['repositoryName']
+    dockerRepo = submissionJson['entity']['repositoryName'].replace("docker.synapse.org/","")
     #assert dockerRepo.startswith("docker.synapse.org")
     assert submission.get('dockerDigest') is not None, "Must submit a docker container with a docker sha digest"
     dockerDigest = submission['dockerDigest']
-    dockerImage = dockerRepo + "@" + dockerDigest
+    index_endpoint = 'https://docker.synapse.org'
+    #dockerImage = dockerRepo + "@" + dockerDigest
 
     #Check if docker is able to be pulled
-    try:
-        client.images.pull(dockerImage)
-    except docker.errors.ImageNotFound as e:
-        raise AssertionError("Docker pull failed: "+str(e))
-    #Must check docker image size
-    #Send email to me if harddrive is full 
-    #should be stateless, if there needs to be code changes to the docker agent
+    dockerRequestURL = '{0}/v2/{1}/manifests/{2}'.format(index_endpoint, dockerRepo, dockerDigest)
+    token = getAuthToken(dockerRequestURL, user, password)
 
-    # must use os.system (Can't pipe with subprocess)
-    out = os.system('docker run -it --rm -e="CLI=true" %s [ -e %s ] || (echo "DoesNotExist" && exit 1)' % (dockerImage, scoring_sh))
-    assert out==0, "%s must exist for your docker container to run" % scoring_sh
+    resp = requests.get(dockerRequestURL,
+                        headers={'Authorization': 'Bearer %s' % token})
+    assert resp.status_code == 200, "Docker image + sha digest must exist"
+    
+    #Must check docker image size
+    #Synapse docker registry
+    dockerSize = sum([layer['size'] for layer in resp.json()['layers']])
+    assert dockerSize/1000000 < 1000, "Docker image must be less than a teribyte"
 
     checkExist = syn.query('select id from folder where parentId == "%s" and name == "%s"' % (CHALLENGE_LOG_PREDICTION_FOLDER, submission.id))
     if checkExist['totalNumberOfResults'] == 0:
@@ -144,7 +162,7 @@ def dockerRun(submission, scoring_sh, syn, client):
 
 
 
-def validate_docker(evaluation, submission):
+def validate_docker(evaluation, submission, syn, client, user, password):
 	"""
 	Find the right validation function and validate the submission.
 
@@ -153,7 +171,7 @@ def validate_docker(evaluation, submission):
 	"""
     config = config_evaluations_map[int(evaluation.id)]
 
-    results = dockerValidate(submission, config['score_sh'], syn, client)
+    results = dockerValidate(submission, syn, user, password)
 	return(results)
 
 
