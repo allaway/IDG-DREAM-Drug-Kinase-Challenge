@@ -250,7 +250,7 @@ def dockerstop(evaluation, syn, client, dry_run=False):
                     submission_id=submission.id,
                     submission_name=submission.name)
 
-def validate(evaluation, syn, client, canCancel, dry_run=False):
+def validate(evaluation, syn, client, canCancel, user, password, dry_run=False):
 
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
@@ -269,7 +269,7 @@ def validate(evaluation, syn, client, canCancel, dry_run=False):
         print "validating", submission.id, submission.name
         ex1 = None
         try:
-            is_valid, validation_message = conf.validate_docker(evaluation, submission, syn, client)
+            is_valid, validation_message = conf.validate_docker(evaluation, submission, syn, client, user, password)
         except Exception as ex1:
             is_valid = False
             print "Exception during validation:", type(ex1), ex1, ex1.message
@@ -552,7 +552,7 @@ def command_list(args):
     the evaluation queues associated with a given project.
     """
     if args.all:
-        for queue_info in conf.evaluation_queues:
+        for queue_info in conf.config_evaluations:
             list_submissions(evaluation=queue_info['id'],
                              status=args.status)
     elif args.challenge_project:
@@ -578,7 +578,7 @@ def command_check_status(args):
 
 def command_reset(args):
     if args.rescore_all:
-        for queue_info in conf.evaluation_queues:
+        for queue_info in conf.config_evaluations:
             for submission, status in syn.getSubmissionBundles(queue_info['id'], status="SCORED"):
                 status.status = args.status
                 if not args.dry_run:
@@ -601,7 +601,7 @@ def command_reset(args):
 
 def command_dockerstop(args):
     if args.all:
-        for queue_info in conf.evaluation_queues:
+        for queue_info in conf.config_evaluations:
             dockerstop(queue_info['id'], args.syn, args.client, dry_run=args.dry_run)
     elif args.evaluation:
         dockerstop(args.evaluation, args.syn, args.client, dry_run=args.dry_run)
@@ -610,16 +610,16 @@ def command_dockerstop(args):
 
 def command_validate(args):
     if args.all:
-        for queue_info in conf.evaluation_queues:
-            validate(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
+        for queue_info in conf.config_evaluations:
+            validate(queue_info['id'], args.syn, args.client, args.canCancel, args.user, args.password, dry_run=args.dry_run)
     elif args.evaluation:
-        validate(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
+        validate(args.evaluation, args.syn, args.client, args.canCancel, args.user, args.password, dry_run=args.dry_run)
     else:
         sys.stderr.write("\nValidate command requires either an evaluation ID or --all to validate all queues in the challenge")
 
 def command_score(args):
     if args.all:
-        for queue_info in conf.evaluation_queues:
+        for queue_info in conf.config_evaluations:
             score(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
         score(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
