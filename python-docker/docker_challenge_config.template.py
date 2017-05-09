@@ -1,7 +1,7 @@
 import docker
 import json
 import subprocess
-from synapseclient import File
+from synapseclient import File, Folder
 import synapseutils as synu
 import zipfile
 import os
