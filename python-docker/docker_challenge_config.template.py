@@ -112,8 +112,8 @@ def dockerValidate(submission, syn, user, password):
 def dockerRun(submission, scoring_sh, syn, client):
     #Make a file view of the prediction folder
     allSubmissions = synu.walk(syn, CHALLENGE_LOG_PREDICTION_FOLDER)
-    predFolder = allSubmissions.next()
-    predFolderId = [synId for name, synId in predFolder[1] if name == submission.id][0]
+    predlogFolder = allSubmissions.next()
+    predlogFolderId = [synId for name, synId in predlogFolder[1] if name == submission.id][0]
 
     dockerDigest = submission.get('dockerDigest')
     submissionJson = json.loads(submission['entityBundleJSON'])
@@ -138,10 +138,12 @@ def dockerRun(submission, scoring_sh, syn, client):
 			with open(LogFileName,'a') as logFile:
 				logFile.write(line)
 			#Only store log file if > 0bytes
-			statinfo = os.stat(LogFileName)
-			if statinfo.st_size > 0:
-				ent = File(LogFileName, parent = CHALLENGE_LOG_FOLDER)
-				logs = syn.store(ent)
+            statinfo = os.stat(LogFileName)
+            if statinfo.st_size == 0:
+                with open(LogFileName, "w") as logs:
+                    logs.write("No logs... Processing complete")
+            ent = File(LogFileName, parent = predlogFolderId)
+            logs = syn.store(ent)
 
 	#Remove container after being done
     container.remove()
@@ -152,7 +154,7 @@ def dockerRun(submission, scoring_sh, syn, client):
         zipdir(OUTPUT_DIR, zipf)
         zipf.close()
 
-        ent = File(submission.id + '_predictions.zip', parent = predFolderId)
+        ent = File(submission.id + '_predictions.zip', parent = predlogFolderId)
         predictions = syn.store(ent)
         prediction_synId = predictions.id
         os.system("rm -rf %s/*" % OUTPUT_DIR)
