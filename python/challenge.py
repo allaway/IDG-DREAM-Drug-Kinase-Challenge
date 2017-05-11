@@ -26,6 +26,7 @@ from synapseclient import Wiki
 from synapseclient import Column
 from synapseclient.dict_object import DictObject
 from synapseclient.annotations import from_submission_status_annotations
+import synapseutils as synu
 
 from collections import OrderedDict
 from datetime import datetime, timedelta
@@ -106,8 +107,8 @@ def update_single_submission_status(status, add_annotations, force=False):
         privateAddedAnnotations = add_annotations
         publicAddedAnnotations = dict()
     else:
-        privateAddedAnnotations = {each['key']:each['value'] for annots in existingAnnotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == True}
-        publicAddedAnnotations = {each['key']:each['value'] for annots in existingAnnotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == False} 
+        privateAddedAnnotations = {each['key']:each['value'] for annots in add_annotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == True}
+        publicAddedAnnotations = {each['key']:each['value'] for annots in add_annotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == False} 
     #If you add a private annotation that appears in the public annotation, it switches 
     if sum([key in publicAddedAnnotations for key in privateAnnotations]) == 0:
         pass
@@ -457,7 +458,7 @@ def list_evaluations(project):
         print "Evaluation: %s" % evaluation.id, evaluation.name.encode('utf-8')
 
 
-def archive(evaluation, destination=None, name=None, query=None):
+def archive(evaluation, archiveType, destination=None, name=None, query=None):
     """
     Archive the submissions for the given evaluation queue and store them in the destination synapse folder.
 
@@ -476,29 +477,40 @@ def archive(evaluation, destination=None, name=None, query=None):
     results = Query(query=query)
     if 'objectId' not in results.headers:
         raise ValueError("Can't find the required field \"objectId\" in the results of the query: \"{0}\"".format(query))
-    if not name:
-        name = 'submissions_%s.tgz' % utils.id_of(evaluation)
-    tar_path = os.path.join(tempdir, name)
-    print "creating tar at:", tar_path
-    print results.headers
-    with tarfile.open(tar_path, mode='w:gz') as archive:
-        with open(os.path.join(tempdir, 'submission_metadata.csv'), 'w') as f:
-            f.write( (','.join(hdr for hdr in (results.headers + ['filename'])) + '\n').encode('utf-8') )
-            for result in results:
-                ## retrieve file into cache and copy it to destination
-                submission = syn.getSubmission(result[results.headers.index('objectId')])
-                prefixed_filename = submission.id + "_" + os.path.basename(submission.filePath)
-                archive.add(submission.filePath, arcname=os.path.join(archive_dirname, prefixed_filename))
-                line = (','.join(unicode(item) for item in (result+[prefixed_filename]))).encode('utf-8')
-                print line
-                f.write(line + '\n')
-        archive.add(
-            name=os.path.join(tempdir, 'submission_metadata.csv'),
-            arcname=os.path.join(archive_dirname, 'submission_metadata.csv'))
+    if archiveType == "submission":
+        if not name:
+            name = 'submissions_%s.tgz' % utils.id_of(evaluation)
+        tar_path = os.path.join(tempdir, name)
+        print "creating tar at:", tar_path
+        print results.headers
+        with tarfile.open(tar_path, mode='w:gz') as archive:
+            with open(os.path.join(tempdir, 'submission_metadata.csv'), 'w') as f:
+                f.write( (','.join(hdr for hdr in (results.headers + ['filename'])) + '\n').encode('utf-8') )
+                for result in results:
+                    ## retrieve file into cache and copy it to destination
+                    submission = syn.getSubmission(result[results.headers.index('objectId')])
+                    prefixed_filename = submission.id + "_" + os.path.basename(submission.filePath)
+                    archive.add(submission.filePath, arcname=os.path.join(archive_dirname, prefixed_filename))
+                    line = (','.join(unicode(item) for item in (result+[prefixed_filename]))).encode('utf-8')
+                    print line
+                    f.write(line + '\n')
+            archive.add(
+                name=os.path.join(tempdir, 'submission_metadata.csv'),
+                arcname=os.path.join(archive_dirname, 'submission_metadata.csv'))
 
-    entity = syn.store(File(tar_path, parent=destination), evaluation_id=utils.id_of(evaluation))
-    print "created:", entity.id, entity.name
-    return entity.id
+        entity = syn.store(File(tar_path, parent=destination), evaluation_id=utils.id_of(evaluation))
+        print("created:", entity.id, entity.name)
+        toReturn = entity.id
+    else:
+        toReturn = {}
+        for result in results:
+            ## retrieve file into cache and copy it to destination
+            submission = syn.getSubmission(result[results.headers.index('objectId')])
+            projectEntity = Project('Archived %s %s %s %s' % (time.strftime("%Y%m%d"),submission.id,submission.entity.id,submission.entity.name))
+            entity = syn.store(projectEntity)
+            copied = synu.copy(syn, submission.entity.id, entity.id)
+            toReturn.update(copied)
+    return toReturn
 
 
 ## ==================================================
@@ -597,7 +609,7 @@ def command_leaderboard(args):
 
 
 def command_archive(args):
-    archive(args.evaluation, args.destination, name=args.name, query=args.query)
+    archive(args.evaluation, args.archiveType, args.destination, name=args.name, query=args.query)
 
 
 ## ==================================================
@@ -642,7 +654,7 @@ def main():
     parser_reset.set_defaults(func=command_reset)
 
     parser_validate = subparsers.add_parser('validate', help="Validate all RECEIVED submissions to an evaluation")
-    parser_validate.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None, )
+    parser_validate.add_argument("evaluation", metavar="EVALUATION-ID", nargs='?', default=None)
     parser_validate.add_argument("--all", action="store_true", default=False)
     parser_validate.add_argument("--canCancel", action="store_true", default=False)
     parser_validate.set_defaults(func=command_validate)
@@ -659,6 +671,7 @@ def main():
 
     parser_archive = subparsers.add_parser('archive', help="Archive submissions to a challenge")
     parser_archive.add_argument("evaluation", metavar="EVALUATION-ID", default=None)
+    parser_archive.add_argument("archiveType",metavar="TYPE", choices=["submission","writeup"])
     parser_archive.add_argument("destination", metavar="FOLDER-ID", default=None)
     parser_archive.add_argument("-q", "--query", default=None)
     parser_archive.add_argument("-n", "--name", default=None)
