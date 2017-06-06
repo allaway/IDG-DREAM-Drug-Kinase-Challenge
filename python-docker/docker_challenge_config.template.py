@@ -93,20 +93,36 @@ def dockerValidate(submission, syn, user, password):
     dockerSize = sum([layer['size'] for layer in resp.json()['layers']])
     assert dockerSize/1000000 < 1000, "Docker image must be less than a teribyte"
 
-    checkExist = syn.query('select id from folder where parentId == "%s" and name == "%s"' % (CHALLENGE_LOG_PREDICTION_FOLDER, submission.id))
-    if checkExist['totalNumberOfResults'] == 0:
-        predFolder = syn.store(Folder(submission.id, parent = CHALLENGE_LOG_PREDICTION_FOLDER))
+    #Send email to me if harddrive is full 
+    #should be stateless, if there needs to be code changes to the docker agent
+    preds = synu.walk(syn, CHALLENGE_PREDICTION_FOLDER)
+    predFolders = preds.next()[1]
+    predSynId = [synId for name, synId in predFolders if str(submission.id) == name]
+
+    logs = synu.walk(syn, CHALLENGE_LOG_FOLDER)
+    logsFolders = logs.next()[1]
+    logsSynId = [synId for name, synId in logsFolders if str(submission.id) == name]
+
+    if len(predSynId) == 0:
+        predFolder = syn.store(Folder(submission.id, parent = CHALLENGE_PREDICTION_FOLDER))
         predFolder = predFolder.id
     else:
-        predFolder = checkExist['results'][0]['folder.id']
-    for participant in submission.contributors:
-        if participant['principalId'] in ADMIN_USER_IDS: 
-            access = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'MODERATE', 'CHANGE_SETTINGS']
-        else:
-            access = ['READ']
-        syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
-
-    return(True, "Your submission has been validated!  As your submission is being scored, please go here: https://www.synapse.org/#!Synapse:%s to check on your log files and resulting prediction files." % predFolder)
+        predFolder = predSynId[0]
+    if len(logsSynId) == 0:
+        logFolder = syn.store(Folder(submission.id, parent = CHALLENGE_LOG_FOLDER))
+        logFolder = logFolder.id
+        for participant in submission.contributors:
+            if participant['principalId'] in ADMIN_USER_IDS: 
+                access = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'MODERATE', 'CHANGE_SETTINGS']
+            else:
+                access = ['READ']
+            #Comment set permissions out if you don't want to allow participants to see the pred files
+            #syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
+            syn.setPermissions(logFolder, principalId = participant['principalId'], accessType = access)
+    else:
+        logFolder = logsSynId[0]    
+        #Add more message if you want to return the prediction files
+    return(True, "Your submission has been validated!  As your submission is being scored, please go here: https://www.synapse.org/#!Synapse:%s to check on your log files." % logFolder)
 
 
 def dockerRun(submission, scoring_sh, syn, client):
