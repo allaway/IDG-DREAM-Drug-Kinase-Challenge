@@ -1,6 +1,6 @@
 # Automation of validation and scoring
 # Make sure you point to the directory where challenge.py belongs and a log directory must exist for the output
-# Set environment variables for synapse username and password
+# Set environment variables in the `crontab -e` for synapse username and password
 cd ./
 #---------------------
 #Validate submissions
