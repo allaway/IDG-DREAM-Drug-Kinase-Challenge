@@ -159,6 +159,7 @@ def dockerRun(submission, scoring_sh, syn, client):
             while subprocess.Popen(['docker','inspect','-f','{{.State.Running}}',container.name],stdout = subprocess.PIPE).communicate()[0] == "true\n":
                 for line in container.logs(stream=True):
                     logFile.write(line)
+                    logFile.flush()
                     #Only store log file if > 0bytes
                     statinfo = os.stat(logFileName)
                     if statinfo.st_size > 0:
@@ -173,6 +174,7 @@ def dockerRun(submission, scoring_sh, syn, client):
                 logFile.write(errors)
             else:
                 logFile.write("No Logs")
+            logFile.flush()
             ent = File(logFileName, parent = predFolderId)
             logs = syn.store(ent)
 
