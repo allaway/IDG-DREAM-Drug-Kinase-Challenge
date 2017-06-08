@@ -113,23 +113,27 @@ def dockerValidate(submission, syn, user, password):
         logFolder = logFolder.id
         for participant in submission.contributors:
             if participant['principalId'] in ADMIN_USER_IDS: 
-                access = ['CREATE', 'READ', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'MODERATE', 'CHANGE_SETTINGS']
+                access = ['CREATE', 'READ', 'DOWNLOAD', 'UPDATE', 'DELETE', 'CHANGE_PERMISSIONS', 'MODERATE', 'CHANGE_SETTINGS']
             else:
-                access = ['READ']
+                access = ['READ','DOWNLOAD']
             #Comment set permissions out if you don't want to allow participants to see the pred files
             #syn.setPermissions(predFolder, principalId = participant['principalId'], accessType = access)
             syn.setPermissions(logFolder, principalId = participant['principalId'], accessType = access)
     else:
         logFolder = logsSynId[0]    
         #Add more message if you want to return the prediction files
-    return(True, "Your submission has been validated!  As your submission is being scored, please go here: https://www.synapse.org/#!Synapse:%s to check on your log files." % logFolder)
+    return(True, "Your submission has been validated!  As your submission is being ran, please go here: https://www.synapse.org/#!Synapse:%s to check on your log file." % logFolder)
 
 
 def dockerRun(submission, scoring_sh, syn, client):
     #Make a file view of the prediction folder
-    allSubmissions = synu.walk(syn, CHALLENGE_LOG_PREDICTION_FOLDER)
-    predlogFolder = allSubmissions.next()
-    predlogFolderId = [synId for name, synId in predlogFolder[1] if name == submission.id][0]
+    allLogs = synu.walk(syn, CHALLENGE_LOG_FOLDER)
+    logFolder = allLogs.next()
+    logFolderId = [synId for name, synId in logFolder[1] if name == submission.id][0]
+    
+    allPreds = synu.walk(syn, CHALLENGE_PREDICTION_FOLDER)
+    predFolder = allPreds.next()
+    predFolderId = [synId for name, synId in predFolder[1] if name == submission.id][0]
 
     dockerDigest = submission.get('dockerDigest')
     submissionJson = json.loads(submission['entityBundleJSON'])
@@ -163,7 +167,7 @@ def dockerRun(submission, scoring_sh, syn, client):
                     #Only store log file if > 0bytes
                     statinfo = os.stat(logFileName)
                     if statinfo.st_size > 0:
-                        ent = File(logFileName, parent = predFolderId)
+                        ent = File(logFileName, parent = logFolderId)
                         logs = syn.store(ent)
             #Remove container and image after being done
             container.remove()
@@ -175,7 +179,7 @@ def dockerRun(submission, scoring_sh, syn, client):
             else:
                 logFile.write("No Logs")
             logFile.flush()
-            ent = File(logFileName, parent = predFolderId)
+            ent = File(logFileName, parent = logFolderId)
             logs = syn.store(ent)
 
     #Zip up predictions and store it into CHALLENGE_PREDICTIONS_FOLDER
@@ -184,7 +188,7 @@ def dockerRun(submission, scoring_sh, syn, client):
         zipdir(OUTPUT_DIR, zipf)
         zipf.close()
 
-        ent = File(submission.id + '_predictions.zip', parent = predlogFolderId)
+        ent = File(submission.id + '_predictions.zip', parent = predFolderId)
         predictions = syn.store(ent)
         prediction_synId = predictions.id
         os.system("rm -rf %s/*" % OUTPUT_DIR)
