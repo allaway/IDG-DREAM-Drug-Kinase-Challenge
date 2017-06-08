@@ -225,8 +225,10 @@ def run_docker(evaluation, submission):
     config = config_evaluations_map[int(evaluation.id)]
     prediction_synId, log_synId =  dockerRun(submission,config['score_sh'], syn, client)
     if prediction_synId is not None:
-        message = "You can find your prediction file here: https://www.synapse.org/#!Synapse:%s" % prediction_synId
+        #Comment top line if you don't want to return the synId of prediction file
+        #message = "You can find your prediction file here: https://www.synapse.org/#!Synapse:%s" % prediction_synId
+        message = "Your prediction file has been stored, but you will not have access to it."
     else:
-        message = "No prediction file generated, please check your log files!"
+        message = "No prediction file generated, please check your log file: https://www.synapse.org/#!Synapse:%s" % log_synId
     return (dict(PREDICTION_FILE=prediction_synId, LOG_FILE = log_synId), message)
 
