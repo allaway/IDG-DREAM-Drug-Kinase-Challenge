@@ -12,8 +12,8 @@ CHALLENGE_SYN_ID = "syn1235"
 CHALLENGE_LOG_FOLDER = "syn12345"
 CHALLENGE_PREDICTION_FOLDER = "syn1235"
 #These are the volumes that you want to mount onto your docker container
-OUTPUT_DIR = '/home/ubuntu/output'
-TESTDATA_DIR = '/home/ubuntu/test-data'
+OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'output')
+TESTDATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'test-data')
 #These are the locations on the docker that you want your mounted volumes to be + permissions in docker (ro, rw)
 #It has to be in this format '/output:rw'
 MOUNTED_VOLUMES = {OUTPUT_DIR:'/output:rw',
