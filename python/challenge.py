@@ -407,7 +407,7 @@ def update_leaderboard_table(leaderboard_table, submission, fields, dry_run=Fals
 
 def query(evaluation, columns, out=sys.stdout):
     """Test the query that will be run to construct the leaderboard"""
-
+    import pandas as pd
     if type(evaluation) != Evaluation:
         evaluation = syn.getEvaluation(evaluation)
 
@@ -436,6 +436,8 @@ def query(evaluation, columns, out=sys.stdout):
     for row in results:
         out.write(",".join(column_to_string(row, column_index, i) for i in indices))
         out.write("\n")
+
+    return(pd.DataFrame.from_records(map(lambda x: x['values'], results.rows), columns=results.headers))
 
 
 def list_submissions(evaluation, status=None, **kwargs):
