@@ -61,14 +61,14 @@ def score2(submission, goldstandard_path):
 evaluation_queues = [
     {
         'id':1,
-        'scoring_func':score1
-        'validation_func':validate_func
+        'scoring_func':score1,
+        'validation_func':validate_func,
         'goldstandard_path':'path/to/sc1gold.txt'
     },
     {
         'id':2,
-        'scoring_func':score2
-        'validation_func':validate_func
+        'scoring_func':score2,
+        'validation_func':validate_func,
         'goldstandard_path':'path/to/sc2gold.txt'
 
     }
