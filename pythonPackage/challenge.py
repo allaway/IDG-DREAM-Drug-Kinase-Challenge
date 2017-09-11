@@ -49,36 +49,43 @@ import traceback
 import urllib
 import uuid
 import warnings
-import logger
+#import logger
 
-try:
-    import challenge_config as conf
-except Exception as ex1:
-    sys.stderr.write("\nPlease configure your challenge. See challenge_config.template.py for an example.\n\n")
-    raise ex1
+# try:
+#     import challenge_config as conf
+# except Exception as ex1:
+#     sys.stderr.write("\nPlease configure your challenge. See challenge_config.template.py for an example.\n\n")
+#     raise ex1
 
 import messages
 
 
 class Challenge:
-    def __init__(self, evaluationId, canCancel=False, dry_run=False):
+    def __init__(self, configjson, username=None, password=None, notifications=False, sendmessages=False, acknowledgereceipt=False, dry_run=False, debug=False):
         ''' Constructor for this class. '''
         # Create some member animals
-        self.members = ['Tiger', 'Elephant', 'Wild Cat']
- 
-    def validate(self):
-        if type(evaluation) != Evaluation:
-            evaluation = syn.getEvaluation(evaluation)
+        syn = synapseclient.login(username, password)
+        self.syn = syn
+        try:
+            with open(configjson, 'r') as configFile:
+                self.config = json.load(configFile)
+        except Exception as ex1:
+            print("Error loading json file:", type(ex1), ex1, ex1.message)
+
+
+    def validate(self, evaluationId, validation_script, canCancel=False):
+        if type(evaluationId) != Evaluation:
+            evaluation = self.syn.getEvaluation(evaluationId)
 
         print "\n\nValidating", evaluation.id, evaluation.name
         print "-" * 60
         sys.stdout.flush()
 
-        for submission, status in syn.getSubmissionBundles(evaluation, status='RECEIVED'):
+        for submission, status in self.syn.getSubmissionBundles(evaluation, status='RECEIVED'):
 
             ## refetch the submission so that we get the file path
             ## to be later replaced by a "downloadFiles" flag on getSubmissionBundles
-            submission = syn.getSubmission(submission)
+            submission = self.syn.getSubmission(submission)
             ex1 = None #Must define ex1 in case there is no error
             print "validating", submission.id, submission.name
             try:
@@ -90,7 +97,7 @@ class Challenge:
                 validation_message = str(ex1)
 
             status.status = "VALIDATED" if is_valid else "INVALID"
-            if canCancel:
+            if self.canCancel:
                 status.canCancel = True
             if not is_valid:
                 failure_reason = {"FAILURE_REASON":validation_message}
@@ -99,7 +106,7 @@ class Challenge:
             add_annotations = synapseclient.annotations.to_submission_status_annotations(failure_reason,is_private=True)
             status = update_single_submission_status(status, add_annotations)
 
-            if not dry_run:
+            if not self.dry_run:
                 status = syn.store(status)
             ## send message AFTER storing status to ensure we don't get repeat messages
             profile = syn.getUserProfile(submission.userId)
@@ -126,7 +133,7 @@ class Challenge:
                     submission_name=submission.name,
                     message=validation_message)
 
-    def score(self):
+    def score(self, evaluationId, canCancel=False):
 
         if type(evaluation) != Evaluation:
             evaluation = syn.getEvaluation(evaluation)

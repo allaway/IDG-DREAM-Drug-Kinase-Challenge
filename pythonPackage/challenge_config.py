@@ -1,3 +1,9 @@
+# Use rpy2 if you have R scoring functions
+# import rpy2.robjects as robjects
+# import os
+# filePath = os.path.join(os.path.dirname(os.path.abspath(__file__)),'getROC.R')
+# robjects.r("source('%s')" % filePath)
+# AUC_pAUC = robjects.r('GetScores')
 ##-----------------------------------------------------------------------------
 ##
 ## challenge specific code and configuration
@@ -8,14 +14,15 @@
 ## A Synapse project will hold the assetts for your challenge. Put its
 ## synapse ID here, for example
 ## CHALLENGE_SYN_ID = "syn1234567"
-CHALLENGE_SYN_ID = "syn4586419"
+CHALLENGE_SYN_ID = ""
 
 ## Name of your challenge, defaults to the name of the challenge's project
-CHALLENGE_NAME = "Example Synapse Challenge"
+CHALLENGE_NAME = ""
 
 ## Synapse user IDs of the challenge admins who will be notified by email
 ## about errors in the scoring script
-ADMIN_USER_IDS = ["3324230"]
+ADMIN_USER_IDS = []
+
 
 ## Each question in your challenge should have an evaluation queue through
 ## which participants can submit their predictions or models. The queues
@@ -28,10 +35,46 @@ ADMIN_USER_IDS = ["3324230"]
 ## ...and found like this:
 ##   evaluations = list(syn.getEvaluationByContentSource('syn3375314'))
 ## Configuring them here as a list will save a round-trip to the server
-## every time the script starts.
+## every time the script starts and you can link the challenge queues to
+## the correct scoring/validation functions.  Predictions will be validated and 
+
+def validate_func(submission, goldstandard_path):
+    ##Read in submission (submission.filePath)
+    ##Validate submission
+    ## MUST USE ASSERTION ERRORS!!! 
+    ##eg.
+    ## assert os.path.basename(submission.filePath) == "prediction.tsv", "Submission file must be named prediction.tsv"
+    ## or raise AssertionError()...
+    ## Only assertion errors will be returned to participants, all other errors will be returned to the admin
+    return(True,"Passed Validation")
+
+def score1(submission, goldstandard_path):
+    ##Read in submission (submission.filePath)
+    ##Score against goldstandard
+    return(score1, score2, score3)
+
+def score2(submission, goldstandard_path):
+    ##Read in submission (submission.filePath)
+    ##Score against goldstandard
+    return(score1, score2, score3)
+
 evaluation_queues = [
-    {'status': u'OPEN', 'contentSource': u'syn4586419', 'submissionInstructionsMessage': u'To submit to the XYZ Challenge, send a tab-delimited file as described here: https://...', u'createdOn': u'2015-07-01T18:41:43.295Z', 'submissionReceiptMessage': u'Your submission has been received. For further information, consult the leader board at https://...', u'etag': u'a595f04a-c5a2-4b0e-8d1f-003a8c46c0cd', u'ownerId': u'3324230', u'id': u'4586421', 'name': u'Example Synapse Challenge 4f41d8a1-8200-4030-97ae-352bc03577b6'}]
+    {
+        'id':1,
+        'scoring_func':score1,
+        'validation_func':validate_func,
+        'goldstandard_path':'path/to/sc1gold.txt'
+    },
+    {
+        'id':2,
+        'scoring_func':score2,
+        'validation_func':validate_func,
+        'goldstandard_path':'path/to/sc2gold.txt'
+
+    }
+]
 evaluation_queue_by_id = {q['id']:q for q in evaluation_queues}
+
 
 ## define the default set of columns that will make up the leaderboard
 LEADERBOARD_COLUMNS = [
@@ -64,7 +107,10 @@ def validate_submission(evaluation, submission):
     :returns: (True, message) if validated, (False, message) if
               validation fails or throws exception
     """
-    return True, "Looks OK to me!"
+    config = evaluation_queue_by_id[int(evaluation.id)]
+    validated, validation_message = config['validation_func'](submission, config['goldstandard_path'])
+
+    return True, validation_message
 
 
 def score_submission(evaluation, submission):
@@ -74,7 +120,9 @@ def score_submission(evaluation, submission):
     :returns: (score, message) where score is a dict of stats and message
               is text for display to user
     """
-    import random
-    return (dict(score=random.random(), rmse=random.random(), auc=random.random()), "You did fine!")
+    config = evaluation_queue_by_id[int(evaluation.id)]
+    score = config['scoring_func'](submission, config['goldstandard_path'])
+    #Make sure to round results to 3 or 4 digits
+    return (dict(score=round(score[0],4), rmse=score[1], auc=score[2]), "You did fine!")
 
 
