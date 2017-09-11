@@ -51,11 +51,6 @@ import uuid
 import warnings
 #import logger
 
-# try:
-#     import challenge_config as conf
-# except Exception as ex1:
-#     sys.stderr.write("\nPlease configure your challenge. See challenge_config.template.py for an example.\n\n")
-#     raise ex1
 
 import messages
 
@@ -66,9 +61,17 @@ class Challenge:
         # Create some member animals
         syn = synapseclient.login(username, password)
         self.syn = syn
+        invalid=False
         try:
             with open(configjson, 'r') as configFile:
-                self.config = json.load(configFile)
+                config = json.load(configFile)
+                if config.get("evaluation_queues") is not None:
+                    invalid=True
+                #Need to figure out how to deal with changing strings into actual functions
+                #should config file be in validate and score function?
+                if invalid:
+                    raise ValueError("Your json file must be formatted like so: ")
+                self.config = config
         except Exception as ex1:
             print("Error loading json file:", type(ex1), ex1, ex1.message)
 
