@@ -11,15 +11,6 @@ CHALLENGE_SYN_ID = "syn1235"
 #Synapse Id of directory that you want the log files to go into
 CHALLENGE_LOG_FOLDER = "syn12345"
 CHALLENGE_PREDICTION_FOLDER = "syn1235"
-#These are the volumes that you want to mount onto your docker container
-OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'output')
-TESTDATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'test-data')
-#These are the locations on the docker that you want your mounted volumes to be + permissions in docker (ro, rw)
-#It has to be in this format '/output:rw'
-MOUNTED_VOLUMES = {OUTPUT_DIR:'/output:rw',
-				   TESTDATA_DIR:'/test-data:ro'}
-#All mounted volumes here in a list
-ALL_VOLUMES = [OUTPUT_DIR,TESTDATA_DIR]
 
 ## Name of your challenge, defaults to the name of the challenge's project
 CHALLENGE_NAME = "Example Synapse Challenge"
@@ -126,6 +117,17 @@ def dockerValidate(submission, syn, user, password):
 
 
 def dockerRun(submission, scoring_sh, syn, client):
+
+    #These are the volumes that you want to mount onto your docker container
+    OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),submission.id)
+    TESTDATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),'test-data')
+    #These are the locations on the docker that you want your mounted volumes to be + permissions in docker (ro, rw)
+    #It has to be in this format '/output:rw'
+    MOUNTED_VOLUMES = {OUTPUT_DIR:'/output:rw',
+                       TESTDATA_DIR:'/test-data:ro'}
+    #All mounted volumes here in a list
+    ALL_VOLUMES = [OUTPUT_DIR,TESTDATA_DIR]
+
     #Make a file view of the prediction folder
     allLogs = synu.walk(syn, CHALLENGE_LOG_FOLDER)
     logFolder = allLogs.next()
@@ -140,6 +142,9 @@ def dockerRun(submission, scoring_sh, syn, client):
     dockerRepo = submissionJson['entity']['repositoryName']
     dockerImage = dockerRepo + "@" + dockerDigest
 
+    if not os.path.exists(OUTPUT_DIR):
+        os.mkdir(OUTPUT_DIR)
+        
 	#Mount volumes
 	volumes = {}
 	for vol in ALL_VOLUMES:
