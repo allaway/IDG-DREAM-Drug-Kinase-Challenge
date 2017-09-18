@@ -60,7 +60,7 @@ import messages
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_DIR = os.path.join(SCRIPT_DIR,"log")
-if not os.path.exists(LOG_DIR)
+if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
 
 # the batch size can be bigger, we do this just to demonstrate batching
@@ -314,13 +314,19 @@ def validate(evaluation, syn, client, canCancel, user, password, dry_run=False):
                 submission_name=submission.name,
                 message=validation_message)
 
-def parallel_run(submissionId, evaluation, syn, client, canCancel, dry_run=False):
+#def parallel_run(submissionId, evaluation, syn, client, canCancel, dry_run=False):
+def parallel_run(submissionId, evaluation, syn, canCancel, userName, password, dry_run=False):
+    client = docker.from_env()
+    client.login(userName, password, registry="http://docker.synapse.org")
     submission = syn.getSubmission(submissionId)
     status = syn.getSubmissionStatus(submissionId)
-    logFile = open(os.path.join(LOG_DIR,status['id'] + "_log.txt",'w'))
+    logFile = open(os.path.join(LOG_DIR,status['id'] + "_log.txt"),'w')
     if canCancel:
         status.canCancel = True
     status.status = "EVALUATION_IN_PROGRESS"
+    startTime = {"RUN_START":int(time.time()*1000)}
+    add_annotations = synapseclient.annotations.to_submission_status_annotations(startTime,is_private=True)
+    status = update_single_submission_status(status, add_annotations)
     status = syn.store(status)
 
     status.status = "INVALID"
@@ -347,6 +353,7 @@ def parallel_run(submissionId, evaluation, syn, client, canCancel, dry_run=False
             score['team'] = get_user_name(profile)
         else:
             score['team'] = '?'
+        score['RUN_END'] = int(time.time()*1000)
 
         add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
         status = update_single_submission_status(status, add_annotations)
@@ -405,7 +412,8 @@ def score(evaluation, syn, client, canCancel, dry_run=False):
 
     for submission, status in syn.getSubmissionBundles(evaluation, status='OPEN'):
         allSubmissions.append(submission.id)
-    par_score_function = partial(parallel_run, syn=syn, client=client, evaluation=evaluation, canCancel=canCancel, dry_run=dry_run)
+    #par_score_function = partial(parallel_run, evaluation=evaluation, syn=syn, client=client, canCancel=canCancel)
+    par_score_function = partial(parallel_run, evaluation=evaluation, syn=syn, canCancel=canCancel, userName=userName, password=password, dry_run=dry_run)
     p = Pool(threads)
     p.map(par_score_function,allSubmissions)
 
@@ -631,9 +639,9 @@ def command_validate(args):
 def command_score(args):
     if args.all:
         for queue_info in conf.config_evaluations:
-            score(queue_info['id'], args.syn, args.client, args.canCancel, dry_run=args.dry_run)
+            score(queue_info['id'], args.syn, args.client, args.canCancel, args.threads, args.user, args.password, dry_run=args.dry_run)
     elif args.evaluation:
-        score(args.evaluation, args.syn, args.client, args.canCancel, dry_run=args.dry_run)
+        score(args.evaluation, args.syn, args.client, args.canCancel, args.threads, args.user, args.password, dry_run=args.dry_run)
     else:
         sys.stderr.write("\Score command requires either an evaluation ID or --all to score all queues in the challenge")
 
@@ -681,6 +689,7 @@ def main():
     parser.add_argument("--dry-run", help="Perform the requested command without updating anything in Synapse", action="store_true", default=False)
     parser.add_argument("--debug", help="Show verbose error output from Synapse API calls", action="store_true", default=False)
     parser.add_argument("--canCancel", action="store_true", default=False)
+    parser.add_argument("--threads", type=int, default=1)
 
     subparsers = parser.add_subparsers(title="subcommand")
 

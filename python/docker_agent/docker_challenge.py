@@ -324,6 +324,8 @@ def score(evaluation, syn, client, canCancel, dry_run=False):
         if canCancel:
             status.canCancel = True
         status.status = "EVALUATION_IN_PROGRESS"
+        add_annotations = synapseclient.annotations.to_submission_status_annotations(startTime,is_private=True)
+        status = update_single_submission_status(status, add_annotations)
         status = syn.store(status)
 
         status.status = "INVALID"
@@ -350,6 +352,7 @@ def score(evaluation, syn, client, canCancel, dry_run=False):
                 score['team'] = get_user_name(profile)
             else:
                 score['team'] = '?'
+            score['RUN_END'] = int(time.time()*1000)
 
             add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
             status = update_single_submission_status(status, add_annotations)
