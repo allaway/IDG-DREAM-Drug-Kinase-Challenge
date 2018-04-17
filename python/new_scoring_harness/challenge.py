@@ -49,8 +49,20 @@ def validate(syn, evaluation, canCancel, dry_run=False):
         logger.info("Validating %s %s" % (submission.id, submission.name))
         runWorkflow(syn)
 
-def readConfig(yamlFile):
-
+def checkAndConfigEval(syn, challenge_config, setEvalConfig=False):
+    quotaKeys = ['roundDurationMillis','submissionLimit','firstRoundStart','numberOfRounds']
+    evalIds = challenge_config.keys()
+    for evalId in evalIds:
+        try:
+            evaluation = syn.getEvaluation(evalId)
+            quota = {key:challenge_config[evalId].get(key) for key in quotaKeys if challenge_config[evalId].get(key) != "None"}
+            if setEvalConfig:
+                print(evaluation)
+                evaluation.quota = quota
+                syn.store(evaluation)
+        except Exception as exception:
+            logger.error("The evaluation queue id provided: %s, make sure your firstRoundStart configuration is in quotes or it will be read in as a datetime object" % evalId)
+            raise exception
 
 ## ==================================================
 ##  Handlers for commands
@@ -72,15 +84,15 @@ def command_validate(syn, args):
 
 def main():
 
-    #if conf.CHALLENGE_SYN_ID == "":
-   #     logger.error("Please configure your challenge. See sample_challenge.py for an example.")
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-u", "--user", help="UserName", default=None)
     parser.add_argument("-p", "--password", help="Password", default=None)
     parser.add_argument("-c", "--config", help="Challenge Config File", required=True)
-    parser.add_argument("--dry-run", help="Perform the requested command without updating anything in Synapse", action="store_true", default=False)
-    parser.add_argument("--debug", help="Show verbose error output from Synapse API calls", action="store_true", default=False)
+    parser.add_argument("--setEvalConfig", help="Set Evaluation quota configuration through the config file", action="store_true")
+
+    parser.add_argument("--dry-run", help="Perform the requested command without updating anything in Synapse", action="store_true")
+    parser.add_argument("--debug", help="Show verbose error output from Synapse API calls", action="store_true")
 
     subparsers = parser.add_subparsers(title="subcommand")
 
@@ -108,6 +120,9 @@ def main():
         except yaml.YAMLError as exception:
             logger.error("Please provide a correctly formatted config file. Look at example.config for help")
             raise exception
+
+    checkAndConfigEval(syn, challenge_config, args.setEvalConfig)
+    
 
     ## Acquire lock, don't run two scoring scripts at once
     try:
