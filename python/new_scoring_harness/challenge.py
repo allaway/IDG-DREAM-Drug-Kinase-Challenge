@@ -33,6 +33,14 @@ logger = logging.getLogger()
 
 import messages
 
+def readYaml(yamlText):
+    try:
+        challenge_config = yaml.load(yamlText)
+    except yaml.YAMLError as exception:
+        logger.error("Please provide a correctly formatted config file. Look at example.config for help")
+        raise exception
+    return(challenge_config)
+
 def runWorkflow(syn):
     pass
 
@@ -40,7 +48,8 @@ def validate(syn, evaluation, canCancel, dry_run=False):
 
     if not isinstance(evaluation, synapseclient.Evaluation):
         evaluation = syn.getEvaluation(evaluation)
-
+    
+    logger.info("-" * 60)
     logger.info("VALIDATING EVAL %s %s" % (evaluation.id, evaluation.name))
     logger.info("-" * 60)
 
@@ -70,8 +79,8 @@ def checkAndConfigEval(syn, challenge_config, setEvalConfig=False):
 
 def command_validate(syn, args):
     if args.all:
-        for queue_info in conf.evaluation_queues:
-            validate(syn, queue_info['id'], args.canCancel, dry_run=args.dry_run)
+        for evalId in args.challenge_config.keys():
+            validate(syn, evalId, args.canCancel, dry_run=args.dry_run)
     elif args.evaluation:
         validate(syn, args.evaluation, args.canCancel, dry_run=args.dry_run)
     else:
@@ -114,16 +123,10 @@ def main():
         raise error
     
     with open(args.config) as config:
-        try:
-            challenge_config = yaml.load(config)
-            args.challenge_config = challenge_config
-        except yaml.YAMLError as exception:
-            logger.error("Please provide a correctly formatted config file. Look at example.config for help")
-            raise exception
+        args.challenge_config = readYaml(config)
 
-    checkAndConfigEval(syn, challenge_config, args.setEvalConfig)
+    checkAndConfigEval(syn, args.challenge_config, args.setEvalConfig)
     
-
     ## Acquire lock, don't run two scoring scripts at once
     try:
         update_lock = lock.acquire_lock_or_fail('challenge', max_age=timedelta(hours=4))
