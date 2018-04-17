@@ -56,7 +56,7 @@ def validate(syn, evaluation, canCancel, dry_run=False):
     for submission, status in syn.getSubmissionBundles(evaluation, status='RECEIVED'):
         submission = syn.getSubmission(submission)
         logger.info("Validating %s %s" % (submission.id, submission.name))
-        runWorkflow(syn)
+        runWorkflow(syn, submission)
 
 def checkAndConfigEval(syn, challenge_config, setEvalConfig=False):
     quotaKeys = ['roundDurationMillis','submissionLimit','firstRoundStart','numberOfRounds']
@@ -66,7 +66,6 @@ def checkAndConfigEval(syn, challenge_config, setEvalConfig=False):
             evaluation = syn.getEvaluation(evalId)
             quota = {key:challenge_config[evalId].get(key) for key in quotaKeys if challenge_config[evalId].get(key) != "None"}
             if setEvalConfig:
-                print(evaluation)
                 evaluation.quota = quota
                 syn.store(evaluation)
         except Exception as exception:
