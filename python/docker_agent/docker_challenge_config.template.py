@@ -1,10 +1,14 @@
 import docker
 import json
+import requests
 import subprocess
+import synapseclient
 from synapseclient import File, Folder
 import synapseutils as synu
 import zipfile
 import os
+import base64
+import time
 
 #Synapse Id of Challenge
 CHALLENGE_SYN_ID = "syn1235"
@@ -19,6 +23,7 @@ CHALLENGE_NAME = "Example Synapse Challenge"
 ## about errors in the scoring script
 ADMIN_USER_IDS = ['123234']
 
+leaderboard_tables = {}
 
 config_evaluations = [
 #Sub-Challenge 1 (12345)
@@ -239,7 +244,7 @@ def dockerRun(submission, scoring_sh, syn, client):
 
 
 
-def validate_docker(evaluation, submission, syn, client, user, password):
+def validate_docker(evaluation, submission, syn, user, password):
 	"""
 	Find the right validation function and validate the submission.
 
@@ -252,7 +257,7 @@ def validate_docker(evaluation, submission, syn, client, user, password):
 	return(results)
 
 
-def run_docker(evaluation, submission):
+def run_docker(evaluation, submission, syn, client):
 	"""
 	Find the right scoring function and score the submission
 
