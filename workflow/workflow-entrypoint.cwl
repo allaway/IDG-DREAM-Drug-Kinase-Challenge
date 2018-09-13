@@ -10,6 +10,9 @@
 cwlVersion: v1.0
 class: Workflow
 
+requirements:
+  - class: StepInputExpressionRequirement
+
 inputs:
   - id: submissionId
     type: int
@@ -55,33 +58,14 @@ steps:
         source: "#validation/status"
     out:
       - id: results
-
-  uploadResults:
-    run: uploadToSynapse.cwl
-    in:
-      - id: infile
-        source: "#scoring/results"
-      - id: parentId
-        source: "#submitterUploadSynId"
-      - id: usedEntity
-        source: "#downloadSubmission/entity"
-      - id: executedEntity
-        source: "#workflowSynapseId"
-      - id: synapseConfig
-        source: "#synapseConfig"
-    out:
-      - id: uploadedFileId
-      - id: uploadedFileVersion
       
   annotateSubmissionWithOutput:
     run: annotateSubmission.cwl
     in:
       - id: submissionId
         source: "#submissionId"
-      - id: annotationName
-        valueFrom:  "workflowOutputFile"
-      - id: annotationValue
-        source: "#uploadResults/uploadedFileId"
+      - id: annotationValues
+        source: "#scoring/results"
       - id: private
         valueFrom: "false"
       - id: synapseConfig
