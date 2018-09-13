@@ -45,6 +45,12 @@ requirements:
             o.write(json.dumps(result))
      
 outputs:
+
+  - id: results
+    type: File
+    outputBinding:
+      glob: results.json   
+
   - id: status
     type: string
     outputBinding:

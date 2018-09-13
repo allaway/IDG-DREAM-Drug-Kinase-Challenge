@@ -46,8 +46,22 @@ steps:
       - id: inputfile
         source: "#downloadSubmission/filePath"
     out:
+      - id: results
       - id: status
       - id: invalidReasons
+  
+  annotateSubmissionWithOutput:
+    run: annotateSubmission.cwl
+    in:
+      - id: submissionId
+        source: "#submissionId"
+      - id: annotationValues
+        source: "#validation/results"
+      - id: private
+        valueFrom: "false"
+      - id: synapseConfig
+        source: "#synapseConfig"
+    out: []
 
   scoring:
     run: score.cwl
