@@ -50,7 +50,7 @@ steps:
       - id: status
       - id: invalidReasons
   
-  annotateSubmissionWithOutput:
+  annotateValidationWithOutput:
     run: annotateSubmission.cwl
     in:
       - id: submissionId
