@@ -25,14 +25,14 @@ def validate_func(submission, goldstandard_path):
         assert col in sub_df.columns, (
             "Submission file is missing column: " + col)
 
-    assert sub_df[0] == gs_df.shape[0], (
+    assert sub_df.shape[0] == gs_df.shape[0], (
         "Submission file should have " +
         str(gs_df.shape[0]) +
         " predictions")
 
     combined_df = pd.merge(sub_df, gs_df, how='inner')
 
-    assert combined_df[0] == gs_df.shape[0], (
+    assert combined_df.shape[0] == gs_df.shape[0], (
         "After merging submission file and gold standard, resulting table is" +
         "missing predictions")
     return(True, "Passed Validation")
