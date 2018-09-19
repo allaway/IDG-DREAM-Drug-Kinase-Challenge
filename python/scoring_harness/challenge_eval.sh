@@ -7,9 +7,9 @@ fi
 #Validate submissions
 #---------------------
 #Remove --send-messages to do rescoring without sending emails to participants
-python $script_dir/challenge.py -u "synapse user here" --send-messages --notifications validate --all >> $script_dir/log/score.log 2>&1
+python3 IDG-DREAM-Drug-Kinase-Challenge/python/scoring_harness/challenge.py  --send-messages --notifications validate --all >> log/score.log 2>&1
 
 #--------------------
 #Score submissions
 #--------------------
-python $script_dir/challenge.py -u "synapse user here" --send-messages --notifications score --all >> $script_dir/log/score.log 2>&1
+python3 IDG-DREAM-Drug-Kinase-Challenge/python/scoring_harness/challenge.py --send-messages --notifications score --all >> log/score.log 2>&1
