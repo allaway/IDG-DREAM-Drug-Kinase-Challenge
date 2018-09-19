@@ -1,11 +1,20 @@
+"""
+config for drug target challenge.
+"""
 import pandas as pd
+import os
+import sys
+import evaluation_metrics as eval
 
 CHALLENGE_SYN_ID = "syn15667962"
 CHALLENGE_NAME = "IDG-DREAM Drug-Kinase Binding Prediction Challenge"
 ADMIN_USER_IDS = [3360851]
+
 REQUIRED_COLUMNS = [
     "Compound_SMILES", "Compound_InchiKeys", "Compound_Name", "UniProt_Id",
     "Entrez_Gene_Symbol", "DiscoveRx_Gene_Symbol", "pKd_[M]_pred"]
+
+CONFIG_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def validate_func(submission, goldstandard_path):
@@ -30,27 +39,32 @@ def validate_func(submission, goldstandard_path):
 
 
 def score1(submission, goldstandard_path):
-    ##Read in submission (submission.filePath)
-    ##Score against goldstandard
-    return(score1, score2, score3)
+    sub_df = pd.read_csv(submission.filePath)
+    gs_df = pd.read_csv(goldstandard_path)
+    combined_df = pd.merge(sub_df, gs_df, how='inner')
+    actual = combined_df["pKd_[M]"]
+    predicted = combined_df["pKd_[M]_pred"]
+    rmse = round(eval.rmse(actual, predicted), 4)
+    pearson = round(eval.pearson(actual, predicted), 4)
+    spearman = round(eval.spearman(actual, predicted), 4)
+    ci = round(eval.ci(actual, predicted), 4)
+    f1 = round(eval.f1(actual, predicted), 4)
+    average_AUC = round(eval.average_AUC(actual, predicted), 4)
+    return(rmse, pearson, spearman, ci, f1, average_AUC)
 
-def score2(submission, goldstandard_path):
-    ##Read in submission (submission.filePath)
-    ##Score against goldstandard
-    return(score1, score2, score3)
 
 evaluation_queues = [
     {
-        'id': 1,
+        'id': 9614078,
         'scoring_func': score1,
         'validation_func': validate_func,
-        'goldstandard_path': 'path/to/sc1gold.txt'
+        'goldstandard_path': CONFIG_DIR + "/round_1_test_data.csv"
     },
     {
-        'id': 2,
-        'scoring_func': score2,
+        'id': 9614079,
+        'scoring_func': score1,
         'validation_func': validate_func,
-        'goldstandard_path': 'path/to/sc2gold.txt'
+        'goldstandard_path': CONFIG_DIR + "/round_2_test_data.csv"
 
     }
 ]
@@ -103,5 +117,11 @@ def score_submission(evaluation, submission):
     """
     config = evaluation_queue_by_id[int(evaluation.id)]
     score = config['scoring_func'](submission, config['goldstandard_path'])
-    #Make sure to round results to 3 or 4 digits
-    return (dict(score=round(score[0],4), rmse=score[1], auc=score[2]), "You did fine!")
+    return (dict(
+        rmse=score[0],
+        pearson=score[1],
+        spearman=score[2],
+        ci=score[3],
+        f1=score[4],
+        average_AUC=score[5]),
+            "You did fine!")
