@@ -4,7 +4,7 @@ config for drug target challenge.
 import pandas as pd
 import os
 import sys
-import evaluation_metrics as eval
+import evaluation_metrics_python2 as eval
 
 CHALLENGE_SYN_ID = "syn15667962"
 CHALLENGE_NAME = "IDG-DREAM Drug-Kinase Binding Prediction Challenge"
