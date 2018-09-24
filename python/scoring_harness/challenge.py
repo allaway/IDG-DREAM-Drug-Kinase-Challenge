@@ -10,7 +10,7 @@
 #   syn.login(<username>, <password>, rememberMe=True)
 #
 # Your credentials will be saved after which you may run this script with no credentials.
-# 
+#
 # Author: chris.bare
 #
 ###############################################################################
@@ -107,8 +107,8 @@ def update_single_submission_status(status, add_annotations, force=False):
         publicAddedAnnotations = dict()
     else:
         privateAddedAnnotations = {each['key']:each['value'] for annots in add_annotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == True}
-        publicAddedAnnotations = {each['key']:each['value'] for annots in add_annotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == False} 
-    #If you add a private annotation that appears in the public annotation, it switches 
+        publicAddedAnnotations = {each['key']:each['value'] for annots in add_annotations for each in add_annotations[annots] if annots not in ['scopeId','objectId'] and each['isPrivate'] == False}
+    #If you add a private annotation that appears in the public annotation, it switches
     if sum([key in publicAddedAnnotations for key in privateAnnotations]) == 0:
         pass
     elif sum([key in publicAddedAnnotations for key in privateAnnotations]) >0 and force:
@@ -139,7 +139,7 @@ def update_single_submission_status(status, add_annotations, force=False):
 
     status.annotations = priv
     return(status)
-    
+
 def update_submissions_status_batch(evaluation, statuses):
     """
     Update statuses in batch. This can be much faster than individual updates,
@@ -301,7 +301,7 @@ def score(evaluation, canCancel, dry_run=False):
                 score['team'] = get_user_name(profile)
             else:
                 score['team'] = '?'
-            add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=True)
+            add_annotations = synapseclient.annotations.to_submission_status_annotations(score,is_private=False)
             status = update_single_submission_status(status, add_annotations)
 
             status.status = "SCORED"
@@ -733,4 +733,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
