@@ -54,12 +54,12 @@ def validate_func(submission, goldstandard_path):
     left_join_df = pd.merge(sub_df, gs_df, how='left')
     left_join_na_df = left_join_df[left_join_df.isnull().any(1)]
     na_row_indeces = left_join_na_df.index.tolist()
-    na_row_numbers = [i + 2 for i in na_row_indeces]
+    na_row_numbers = ", ".join([str(i + 2) for i in na_row_indeces])
 
     assert combined_df.shape[0] == gs_df.shape[0], (
         "Merge failed due to inconsistent values between submission file and" +
         " validation file in one or more label columns at rows: " +
-        ", ".join(na_row_numbers))
+        na_row_numbers)
 
     assert combined_df["pKd_[M]_pred"].var() != 0, (
         "After merging submission file and gold standard, prediction column" +
