@@ -16,9 +16,9 @@ dry_run = False
 
 ## Edit these URLs to point to your challenge and its support forum
 defaults = dict(
-    challenge_instructions_url = "https://www.synapse.org/",
-    support_forum_url = "https://www.synapse.org/#!Synapse:{synIdhere}/discussion/default",
-    scoring_script = "the scoring script")
+    challenge_instructions_url = "https://www.synapse.org/#!Synapse:syn15667962/wiki/583661",
+    support_forum_url = "https://www.synapse.org/#!Synapse:syn15667962/discussion/default",
+    scoring_script = "IDG-DREAM Challenge")
 
 ##---------------------------------------------------------
 ## Message templates:
@@ -141,7 +141,7 @@ formatter = DefaultingFormatter()
 
 def validation_failed(userIds, **kwargs):
     if send_messages:
-        return send_message(userIds=userIds, 
+        return send_message(userIds=userIds,
                             subject_template=validation_failed_subject_template,
                             message_template=validation_failed_template,
                             kwargs=kwargs)
@@ -193,6 +193,3 @@ def send_message(userIds, subject_template, message_template, kwargs):
         return response
     else:
         sys.stderr.write("Can't send message. No Synapse object configured\n")
-
-
-

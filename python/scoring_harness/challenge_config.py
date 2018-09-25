@@ -18,19 +18,38 @@ CONFIG_DIR = os.path.dirname(os.path.realpath(sys.argv[0]))
 
 
 def validate_func(submission, goldstandard_path):
-    sub_df = pd.read_csv(submission.filePath)
+    try:
+        sub_df = pd.read_csv(submission.filePath)
+    except Exception as e:
+        error_string = "Error reading in submission file: " + str(e)
+        raise AssertionError(error_string)
+
     gs_df = pd.read_csv(goldstandard_path)
 
     for col in REQUIRED_COLUMNS:
         assert col in sub_df.columns, (
             "Submission file is missing column: " + col)
 
+    assert sub_df.shape[0] == sub_df.shape[0], (
+        "Submission file has missing values.")
+
+    sub_df["pKd_[M]_pred"] = pd.to_numeric(sub_df["pKd_[M]_pred"],
+                                           errors='coerce')
+
+    assert sub_df.shape[0] == sub_df.dropna().shape[0], (
+        "Submission file has missing values, after converting prediction " +
+        "column to float values.")
+
     assert sub_df.shape[0] == gs_df.shape[0], (
         "Submission file should have " +
         str(gs_df.shape[0]) +
         " predictions")
 
-    combined_df = pd.merge(sub_df, gs_df, how='inner')
+    try:
+        combined_df = pd.merge(sub_df, gs_df, how='inner')
+    except Exception as e:
+        error_string = "Error combing submission and gold standard file"
+        raise AssertionError(error_string)
 
     assert combined_df.shape[0] == gs_df.shape[0], (
         "After merging submission file and gold standard, resulting table is" +
