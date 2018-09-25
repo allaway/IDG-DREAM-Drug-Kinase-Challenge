@@ -53,7 +53,12 @@ def validate_func(submission, goldstandard_path):
 
     assert combined_df.shape[0] == gs_df.shape[0], (
         "After merging submission file and gold standard, resulting table is" +
-        "missing predictions")
+        " missing predictions.")
+
+    assert combined_df["pKd_[M]_pred"].var() != 0, (
+        "After merging submission file and gold standard, prediction column" +
+        " has variance of 0.")
+
     return(True, "Passed Validation")
 
 
