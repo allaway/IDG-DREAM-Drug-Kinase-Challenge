@@ -47,7 +47,7 @@ if(args$status != "VALIDATED"){
     
     reticulate::use_python("/usr/local/bin/python2")
     
-    reticulate::source_python('evaluation_metrics_python2.py')
+    reticulate::source_python('/usr/local/bin/evaluation_metrics_python2.py')
     
     spearman_py <- function(gold, pred){
         gold_py <- gold %>% np_array()
