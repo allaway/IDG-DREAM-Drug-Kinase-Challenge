@@ -6,8 +6,7 @@ baseCommand: [Rscript, /usr/local/bin/score.R]
 
 hints:
   DockerRequirement:
-    #dockerPull: quay.io/andrewelamb/drug_target_score_1b
-    dockerPull: drug_target_score_1b
+    dockerPull: quay.io/andrewelamb/drug_target_score_1b
     
 requirements:
   - class: InlineJavascriptRequirement
