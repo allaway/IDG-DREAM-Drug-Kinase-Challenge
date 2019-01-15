@@ -4,7 +4,11 @@
 
 cwlVersion: v1.0
 class: CommandLineTool
-baseCommand: [python3.5, /home/aelamb/repos/IDG-DREAM-Drug-Kinase-Challenge/round1b/dowload_current_lead_submission.py]
+baseCommand: [python3, /usr/local/bin/download_current_lead_submission.py]
+
+hints:
+  DockerRequirement:
+    dockerPull: quay.io/andrewelamb/python_challenge_utils
 
 inputs:
 
