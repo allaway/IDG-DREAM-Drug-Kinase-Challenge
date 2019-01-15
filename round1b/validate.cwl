@@ -13,7 +13,7 @@ hints:
     
 inputs:
 
-  submission_file:
+  inputfile:
     type: File
     inputBinding:
       prefix: --submission_file
