@@ -85,6 +85,12 @@ check_submission_file_readable <- function(status, submission_file){
 
 check_submission_structure <- function(status, validation_df, submission_df){
     
+    if("pKd_[M]" %in% colnames(submission_df)) {
+        status$status = "INVALID"
+        status$reasons = "Submission file cannot have column: pKd_[M]" 
+        return(status)
+    }
+    
     extra_columns <- submission_df %>% 
         colnames() %>% 
         setdiff(REQUIRED_COLUMNS) %>% 
