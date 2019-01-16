@@ -1,3 +1,4 @@
+library(plyr)
 library(reticulate)
 library(challengescoring)
 library(argparse)
