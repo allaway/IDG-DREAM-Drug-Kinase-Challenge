@@ -4,7 +4,7 @@ RUN Rscript -e "install.packages('devtools')"
 RUN Rscript -e "install.packages('argparse')"
 RUN Rscript -e "install.packages('reticulate')"
 RUN Rscript -e "install.packages('rjson')"
-RUN Rscript -e "devtools::install_github('Sage-Bionetworks/challengescoring')"
+RUN Rscript -e "devtools::install_github('Sage-Bionetworks/challengescoring', ref = 'develop')"
 
 RUN apt-get install -y python-pip
 
