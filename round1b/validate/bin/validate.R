@@ -24,15 +24,19 @@ parser$add_argument(
 
 args <- parser$parse_args()
 
-
-REQUIRED_COLUMNS = list(
+JOIN_COLUMNS = list(
     "Compound_SMILES",
     "Compound_InchiKeys",
     "Compound_Name", 
     "UniProt_Id", 
     "Entrez_Gene_Symbol", 
-    "DiscoveRx_Gene_Symbol", 
-    "pKd_[M]_pred")  
+    "DiscoveRx_Gene_Symbol"
+)
+
+PREDICTION_COLUMN = "pKd_[M]_pred"
+GOLDSATNDARD_COLUMN = "pKd_[M]"
+
+REQUIRED_COLUMNS = c(JOIN_COLUMNS, PREDICTION_COLUMN)
 
 get_submission_status_json <- function(submission_file, validation_file){
     status <- check_submission_file(submission_file, validation_file)
@@ -85,9 +89,10 @@ check_submission_file_readable <- function(status, submission_file){
 
 check_submission_structure <- function(status, validation_df, submission_df){
     
-    if("pKd_[M]" %in% colnames(submission_df)) {
+    if(GOLDSATNDARD_COLUMN %in% colnames(submission_df)) {
         status$status = "INVALID"
-        status$reasons = "Submission file cannot have column: pKd_[M]" 
+        status$reasons = str_c("Submission file cannot have column: ", 
+                               GOLDSATNDARD_COLUMN) 
         return(status)
     }
     
