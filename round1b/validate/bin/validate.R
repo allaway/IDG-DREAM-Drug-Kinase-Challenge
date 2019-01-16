@@ -34,7 +34,7 @@ JOIN_COLUMNS = list(
 )
 
 PREDICTION_COLUMN = "pKd_[M]_pred"
-GOLDSATNDARD_COLUMN = "pKd_[M]"
+GOLDSTANDARD_COLUMN = "pKd_[M]"
 
 REQUIRED_COLUMNS = c(JOIN_COLUMNS, PREDICTION_COLUMN)
 
@@ -89,10 +89,17 @@ check_submission_file_readable <- function(status, submission_file){
 
 check_submission_structure <- function(status, validation_df, submission_df){
     
-    if(GOLDSATNDARD_COLUMN %in% colnames(submission_df)) {
+    if(GOLDSTANDARD_COLUMN %in% colnames(submission_df)) {
         status$status = "INVALID"
         status$reasons = str_c("Submission file cannot have column: ", 
-                               GOLDSATNDARD_COLUMN) 
+                               GOLDSTANDARD_COLUMN) 
+        return(status)
+    }
+    
+    if(!PREDICTION_COLUMN %in% colnames(submission_df)) {
+        status$status = "INVALID"
+        status$reasons = str_c("Submission file missing column: ", 
+                               PREDICTION_COLUMN) 
         return(status)
     }
     
@@ -128,8 +135,8 @@ check_submission_structure <- function(status, validation_df, submission_df){
     error_messages <- c(
         "Submission file has extra columns: ",
         "Submission file has missing columns: ",
-        "Submission file has missing rows: ",
-        "Submission file has extra rows: "
+        "Submission file has extra rows: ",
+        "Submission file has missing rows: "
     )
     
     for(i in 1:length(error_messages)){
@@ -152,17 +159,20 @@ check_submission_values <- function(status, submission_df){
         magrittr::use_series(prediction) %>% 
         is.infinite() %>% 
         any
-    variance <- prediction_df %>% 
-        magrittr::use_series(prediction) %>% 
-        var() 
     if(contains_na) {
         status$status = "INVALID"
         status$reasons = "Submission_df missing numeric values" 
     }
     if(contains_inf) {
         status$status = "INVALID"
-        status$reasons = c(status$reasons, "Submission_df missing numeric values")
+        status$reasons = c(status$reasons, "Submission_df contains the value Inf")
     }
+    if(status$status == "INVALID"){
+        return(status)
+    }
+    variance <- prediction_df %>% 
+        magrittr::use_series(prediction) %>% 
+        var() 
     if(variance == 0){
         status$status = "INVALID"
         status$reasons = c(status$reasons, "Submission_df predictions have a variance of 0")
