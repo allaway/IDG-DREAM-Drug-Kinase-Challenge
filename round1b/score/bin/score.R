@@ -106,8 +106,8 @@ if(args$status != "VALIDATED"){
     
     output <- param_df %>% 
         purrr::pmap(bootLadderBoot) %>% 
-        # magrittr::set_names(c("spearman", "pearson_py", "auc_py", "ci_py", "f1_py", "rmse"))
-        magrittr::set_names(c("spearman", "pearson_py"))
+        # magrittr::set_names(c("spearman", "pearson", "auc", "ci", "f1", "rmse"))
+        magrittr::set_names(c("spearman", "pearson"))
     
     output_scores <- purrr::map(output, "score")
     
