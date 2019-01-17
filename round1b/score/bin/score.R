@@ -39,6 +39,10 @@ parser$add_argument(
     type = "character",
     help = "current submission status")
 
+parser$add_argument(
+    "-v",
+    "--verbose",
+    action = 'store_false')
 
 args <- parser$parse_args()
 
@@ -50,6 +54,9 @@ if(args$status != "VALIDATED"){
 } else {
     
     n_cores <- parallel::detectCores()
+    if(args$verbose){
+        print(stringr::str_c("Number of cores: ", as.character(n_cores)))  
+    } 
     
     if(is.na(n_cores) || n_cores <= 2){
         do_parallel <- F
@@ -57,6 +64,8 @@ if(args$status != "VALIDATED"){
         do_parallel <- T
         doMC::registerDoMC(cores = n_cores -1)
     }
+    
+    
     
     reticulate::use_python("/usr/local/bin/python2")
     
@@ -100,10 +109,8 @@ if(args$status != "VALIDATED"){
     
     param_df <- 
         tibble::tibble(
-            # scoreFun = list(spearman_py, pearson_py, auc_py, ci_py, f1_py, rmse_py),
-            scoreFun = list(spearman_py, pearson_py),
-            # largerIsBetter = c(rep(T, 5), F),
-            largerIsBetter = c(T, T),
+            scoreFun = list(spearman_py, pearson_py, auc_py, ci_py, f1_py, rmse_py),
+            largerIsBetter = c(rep(T, 5), F),
             predictions = args$current_sub,
             predictionColname = 'pKd_.M._pred',
             goldStandard = args$gold_standard,
@@ -118,8 +125,7 @@ if(args$status != "VALIDATED"){
     
     output <- param_df %>% 
         purrr::pmap(bootLadderBoot) %>% 
-        # magrittr::set_names(c("spearman", "pearson", "auc", "ci", "f1", "rmse"))
-        magrittr::set_names(c("spearman", "pearson"))
+        magrittr::set_names(c("spearman", "pearson", "auc", "ci", "f1", "rmse"))
     
     output_scores <- purrr::map(output, "score")
     
@@ -132,7 +138,6 @@ if(args$status != "VALIDATED"){
     }
     
     result_json <- output_scores %>% 
-        magrittr::inset("met_cutoff", value = met_cutoff) %>% 
         magrittr::inset("met_cutoff", value = met_cutoff) %>% 
         magrittr::inset("prediction_file_status", value = "SCORED") %>% 
         rjson::toJSON()

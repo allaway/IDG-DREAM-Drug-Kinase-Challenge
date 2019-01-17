@@ -22,6 +22,7 @@ parser$add_argument(
     required = TRUE,
     help = "gold_standard file")
 
+
 args <- parser$parse_args()
 
 JOIN_COLUMNS = list(
