@@ -67,7 +67,7 @@ if(args$status != "VALIDATED"){
     
     
     
-    reticulate::use_python("/usr/local/bin/python2")
+    reticulate::use_python("/usr/bin/python2.7")
     
     reticulate::source_python('/usr/local/bin/evaluation_metrics_python2.py')
     
@@ -109,7 +109,7 @@ if(args$status != "VALIDATED"){
     
     param_df <- 
         tibble::tibble(
-            scoreFun = list(spearman_py, pearson_py, auc_py, ci_py, f1_py, rmse_py),
+            scoreFun = list(auc_py, spearman_py, pearson_py, ci_py, f1_py, rmse_py),
             largerIsBetter = c(rep(T, 5), F),
             predictions = args$current_sub,
             predictionColname = 'pKd_.M._pred',
@@ -125,7 +125,7 @@ if(args$status != "VALIDATED"){
     
     output <- param_df %>% 
         purrr::pmap(bootLadderBoot) %>% 
-        magrittr::set_names(c("spearman", "pearson", "auc", "ci", "f1", "rmse"))
+        magrittr::set_names(c("auc", "spearman", "pearson", "ci", "f1", "rmse"))
     
     output_scores <- purrr::map(output, "score")
     
