@@ -1,4 +1,5 @@
 library(plyr)
+library(doMC)
 library(reticulate)
 library(challengescoring)
 library(argparse)
@@ -6,6 +7,8 @@ library(magrittr)
 library(rjson)
 library(tibble)
 library(purrr)
+
+
 
 parser = ArgumentParser(description = "Create directory with input files")
 
@@ -45,6 +48,15 @@ if(args$status != "VALIDATED"){
         rjson::toJSON()
     
 } else {
+    
+    n_cores <- parallel::detectCores()
+    
+    if(is.na(n_cores) || n_cores <= 2){
+        do_parallel <- F
+    } else {
+        do_parallel <- T
+        doMC::registerDoMC(cores = n_cores -1)
+    }
     
     reticulate::use_python("/usr/local/bin/python2")
     
@@ -96,7 +108,7 @@ if(args$status != "VALIDATED"){
             predictionColname = 'pKd_.M._pred',
             goldStandard = args$gold_standard,
             goldStandardColname = 'pKd_.M.',
-            doParallel = T
+            doParallel = do_parallel
         ) 
     
     if (!is.null(args$previous_sub)){
