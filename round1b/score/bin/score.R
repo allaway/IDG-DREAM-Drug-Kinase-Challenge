@@ -90,8 +90,8 @@ if(args$status != "VALIDATED"){
     }
     
     auc_py <- function(gold, pred){
-        gold_py <- gold %>% as.data.frame() %>% r_to_py()
-        pred_py <- pred %>% as.data.frame() %>% r_to_py()
+        gold_py <- gold %>% np_array()
+        pred_py <- pred %>% np_array()
         average_AUC(gold_py, pred_py)
     }
     
@@ -102,8 +102,8 @@ if(args$status != "VALIDATED"){
     }
     
     f1_py <- function(gold, pred){
-        gold_py <- gold %>% as.data.frame() %>% r_to_py()
-        pred_py <- pred %>% as.data.frame() %>% r_to_py()
+        gold_py <- gold %>% np_array()
+        pred_py <- pred %>% np_array()
         f1(gold_py, pred_py)
     }
     
