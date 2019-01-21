@@ -131,7 +131,7 @@ if(args$status != "VALIDATED"){
     
     met_cutoff <- output %>% 
         magrittr::extract2("spearman") %>% 
-        magrittr::extract2("metBayesCutoff")
+        magrittr::extract2("metCutoff")
     
     if(is.na(met_cutoff)) {
         met_cutoff <- T
