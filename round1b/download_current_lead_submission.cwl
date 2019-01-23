@@ -38,4 +38,4 @@ outputs:
   - id: output
     type: File?
     outputBinding:
-      glob: "*"
+      glob: "previous_submission.csv"
