@@ -35,9 +35,8 @@ inputs:
   - id: cutoff_annotation
     type: string?
     inputBinding:
-      prefix: -c
-
-
+      prefix: -a
+   
 outputs:
 
   - id: output
