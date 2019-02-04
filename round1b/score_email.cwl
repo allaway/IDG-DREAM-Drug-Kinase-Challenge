@@ -59,7 +59,7 @@ requirements:
           status = annots['prediction_file_status']
           del annots['prediction_file_status']
           if status == "SCORED":
-            for annot in private_annotaions:
+            for annot in args.private_annotaions:
                 del annots[annot]
             subject = "Submission to '%s' scored!" % evaluation.name
             message = ["Hello %s,\n\n" % syn.getUserProfile(userid)['userName'],
