@@ -13,6 +13,7 @@ class: Workflow
 
 requirements:
   - class: StepInputExpressionRequirement
+  - class: InlineJavascriptRequirement
 
 inputs:
   - id: submissionId
