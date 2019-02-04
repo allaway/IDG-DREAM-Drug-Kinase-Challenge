@@ -32,6 +32,11 @@ inputs:
     inputBinding:
       prefix: -s
 
+  - id: cutoff_annotation
+    type: string?
+    inputBinding:
+      prefix: -c
+
 
 outputs:
 
