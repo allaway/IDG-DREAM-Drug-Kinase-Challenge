@@ -32,7 +32,7 @@ outputs: []
 
 steps:
   download_current_submission:
-    run: https://raw.githubusercontent.com/Sage-Bionetworks/ChallengeWorkflowTemplates/v1.1/download_submission_file.cwl
+    run: download_submission_file.cwl
     in:
       - id: submissionid
         source: "#submissionId"
