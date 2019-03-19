@@ -4,15 +4,14 @@ cwlVersion: v1.0
 class: CommandLineTool
 baseCommand: 
 - python3
-- validate.py
+- /usr/local/bin/validate.py
 
 requirements:
 - class: InlineJavascriptRequirement
 
 hints:
   DockerRequirement:
-#    dockerPull: quay.io/andrewelamb/drug_target_validate_2
-    dockerPull: drug_target_validate_2
+    dockerPull: quay.io/andrewelamb/drug_target_validate_2
     
 inputs:
 
