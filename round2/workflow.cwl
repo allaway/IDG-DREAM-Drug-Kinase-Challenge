@@ -41,16 +41,26 @@ steps:
       - id: filepath
       - id: entity
       - id: entity_type 
+
+  download_goldstandard:
+    run: https://raw.githubusercontent.com/Sage-Bionetworks/ChallengeWorkflowTemplates/v1.3/download_from_synapse.cwl
+    in:
+      - id: synapseid
+        valueFrom: "syn18421225"
+      - id: synapse_config
+        source: "#synapseConfig"
+    out:
+      - id: filepath
       
   validation:
     run: validate.cwl
     in:
       - id: inputfile
-        source: "#download_current_submission/filepath"
-      - id: goldstandard
+        source: "#download_submission/filepath"
+      - id: goldstandard_file
         source: "#download_goldstandard/filepath"
       - id: entity_type
-        source: "#download_current_submission/entity_type"
+        source: "#download_submission/entity_type"
     out:
       - id: results
       - id: status
@@ -70,6 +80,8 @@ steps:
 
     out: []
 
+
+
   annotate_validation_with_output:
     run: https://raw.githubusercontent.com/Sage-Bionetworks/ChallengeWorkflowTemplates/v1.3/annotate_submission.cwl
     in:
@@ -85,17 +97,6 @@ steps:
         source: "#synapseConfig"
     out: []
 
-  download_goldstandard:
-    run: https://raw.githubusercontent.com/Sage-Bionetworks/ChallengeWorkflowTemplates/v1.3/download_from_synapse.cwl
-    in:
-      - id: synapseid
-        #This is a dummy syn id, replace when you use your own workflow
-        valueFrom: "syn18081597"
-      - id: synapse_config
-        source: "#synapseConfig"
-    out:
-      - id: filepath
-
   scoring:
     run: score.cwl
     in:
@@ -103,7 +104,7 @@ steps:
         source: "#download_submission/filepath"
       - id: status 
         source: "#validation/status"
-      - id: goldstandard
+      - id: goldstandard_file
         source: "#download_goldstandard/filepath"
     out:
       - id: results
