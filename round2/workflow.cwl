@@ -12,7 +12,8 @@ cwlVersion: v1.0
 class: Workflow
 
 requirements:
-  - class: StepInputExpressionRequirement
+- class: StepInputExpressionRequirement
+- class: InlineJavascriptRequirement
 
 inputs:
   - id: submissionId
@@ -118,6 +119,8 @@ steps:
         source: "#synapseConfig"
       - id: results
         source: "#scoring/results"
+      - id: private_annotations
+        valueFrom: $(["auc", "spearman", "rmse"])
     out: []
 
   annotate_submission_with_output:
