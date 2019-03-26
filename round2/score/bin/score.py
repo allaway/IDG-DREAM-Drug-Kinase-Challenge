@@ -50,20 +50,20 @@ if __name__ == '__main__':
         
         rmse = ev.rmse(actual, predicted)
         spearman = ev.spearman(actual, predicted)
-        auc = ev.average_AUC(actual, predicted)
+        average_auc = ev.average_AUC(actual, predicted)
         
         rounded_rmse = round(rmse, 3)
         rounded_spearman = round(spearman, 3)
-        rounded_auc = round(auc, 3)
+        rounded_average_auc = round(average_auc, 3)
         
         result = {
             "prediction_file_status":"SCORED",
             "rmse": rmse,
             "spearman": spearman,
-            "auc": auc,
+            "average_auc": average_auc,
             "rounded_rmse": rounded_rmse,
             "rounded_spearman": rounded_spearman,
-            "rounded_auc": rounded_auc}
+            "rounded_average_auc": rounded_average_auc}
             
     else:
         result = {"prediction_file_status":"INVALID"}
