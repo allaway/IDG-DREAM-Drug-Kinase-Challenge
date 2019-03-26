@@ -12,7 +12,7 @@ import challengeutils
 queue = "evaluation_9614079"
 
 
-syn = synapseclient.Synapse()
+syn = synapseclient.Synapse(configPath=".synapseConfig")
 syn.login()
 
 query = (
