@@ -22,8 +22,8 @@ generator = challengeutils.utils.evaluation_queue_query(syn, query)
 lst = list(generator)
 
 for dct in lst:
-    id = dct['objectId']
-    status = syn.getSubmissionStatus(id)
+    print("id: " + dct['objectId'])
+    status = syn.getSubmissionStatus(dct['objectId'])
     status.status = 'INVALID'
     syn.store(status)
 
