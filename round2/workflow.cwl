@@ -120,7 +120,7 @@ steps:
       - id: results
         source: "#scoring/results"
       - id: private_annotations
-        valueFrom: $(["auc", "spearman", "rmse"])
+        valueFrom: $(["average_auc", "spearman", "rmse"])
     out: []
 
   annotate_submission_with_output:
