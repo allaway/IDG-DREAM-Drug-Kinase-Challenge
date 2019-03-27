@@ -3,12 +3,15 @@ Sample instructions for creating a docker container.
 1. Write R script (or Python, or other), save all required scripts to a single directory (e.g. /docker_demo). 
 
 2. Create a Dockerfile:
+
+```
 cd docker_demo
 touch Dockerfile
+```
 
 3. Open Dockerfile in a text editor and begin editing. Our demo requires R and the tidyverse, so in this example we will be using the rocker-tidyverse image as a base (FROM), adding a destination directory for this analysis in the container (RUN mkdir) and adding our script to that directory (COPY).
 
------
+```
 FROM rocker/r-ver #use rocker as a base image
 
 RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
@@ -21,8 +24,7 @@ COPY demo_prediction.R /test/demo_prediction.R #copy over prediction script
 COPY round_2_template.csv /io/template.csv #copy round 2 template in as "template.csv"
 
 CMD Rscript /test/demo_prediction.R #run r script 
-
------
+```
 
 It is important that your image can predict using any template file - e.g. the round 1 template file, or others. 
 
@@ -30,13 +32,39 @@ In summary, your docker image must have two things at a minimum:  1) have a temp
 
 4. Create your docker image (here, we are naming it 'demo') like so:
 
-docker build -t demo .
+`docker build -t demo . `
 
 5. Test that your docker image works like so:
 
-mkdir io
-docker run -it --rm -v ${PWD}/io:/io  demo
+```
+$ mkdir io
+$ docker run -it --rm -v ${PWD}/io:/io  demo
+```
 
+6. Once you are satisfied, navigate to the directory with your Dockerfile and please build your Docker image, associating it with one of your Synapse projects, and "tagging" the image with the *objectId* of your prediction submission - this comes from the leaderboard!
+,
+$ docker build -t  docker.synapse.org/<synapse_project_id>/<my_model>:<object_id> . `
 
+e.g.
 
+`$ docker build -t  docker.synapse.org/syn1234598/demo:9872134 . `
+
+7. Then, please login to the Synapse Docker repo:
+
+```
+$ docker login docker.synapse.org
+Username (Synapse user):
+Password: 
+Login Succeeded 
+````
+
+8. Push your Docker image to the Synapse project. 
+
+`$ docker push docker.synapse.org/<synapse_project_id>/<my_model>:<object_id>`
+
+e.g.
+
+`$ docker push docker.synapse.org/syn1234598/demo:9872134`
+
+9. Navigate to your project, click the 'Docker' tab and then click Docker Repository Tools -> Docker Repository Sharing Settings. Please share the project with the team 'Drug Kinase Prediction Challenge Admins.'
 
