@@ -1,16 +1,27 @@
-Sample instructions for creating a docker container. 
+${toc}
 
-1. Write R script (or Python, or other), save all required scripts to a single directory (e.g. /docker_demo). 
 
-2. Create a Dockerfile:
+##Creating your Docker container
+
+Here are some instructions for creating a Docker container, using an example. *IMPORTANT:* your Docker image must fulfill these requirements at a minimum:  1) have a template.csv file in the 'io' directory that is used to create prediction values (in the round 2 template format, should also work for round 1 template) and 2) place a prediction file called prediction.csv in the 'io' directory.
+
+###Gather code
+ Get R or Python, or other files and save all required scripts to a single directory (e.g. /docker_demo). For this example, we are using the files in this [directory](https://github.com/allaway/IDG-DREAM-Drug-Kinase-Challenge/tree/master/round2/docker_demo).
+
+###Create a Dockerfile
+
+This is created in the same directory as your model scripts. 
 
 ```
-cd docker_demo
-touch Dockerfile
+$ cd docker_demo
+$ touch Dockerfile
 ```
 
-3. Open Dockerfile in a text editor and begin editing. Our demo requires R and the tidyverse, so in this example we will be using the rocker-tidyverse image as a base (FROM), adding a destination directory for this analysis in the container (RUN mkdir) and adding our script to that directory (COPY).
+###Write Dockerfile
 
+Open Dockerfile in a text editor and begin editing. Our demo requires R and the tidyverse, so in this example we will be using the rocker-tidyverse image as a base (FROM), adding a destination directory for this analysis in the container (RUN mkdir) and adding our script to that directory (COPY).
+
+for our Github example:
 ```
 FROM rocker/r-ver #use rocker as a base image
 
@@ -28,28 +39,43 @@ CMD Rscript /test/demo_prediction.R #run r script
 
 It is important that your image can predict using any template file - e.g. the round 1 template file, or others. 
 
-In summary, your docker image must have two things at a minimum:  1) have a template.csv file in the 'io' directory that is used to create prediction values (in the round 2 template format, should also work for round 1 template) and 2) place a prediction file called prediction.csv in the 'io' directory. 
+*In summary, your docker image must fulfill these requirements at a minimum:  1) have a template.csv file in the 'io' directory that is used to create prediction values (in the round 2 template format, should also work for round 1 template) and 2) place a prediction file called prediction.csv in the 'io' directory. *
 
-4. Create your docker image (here, we are naming it 'demo') like so:
+###Test build your image
 
-`docker build -t demo . `
+Create your Docker image (here, we are naming it 'demo') like so:
 
-5. Test that your docker image works like so:
+```
+$ docker build -t demo .
+ ```
+
+###Test your Docker image  
+
+Like so:
 
 ```
 $ mkdir io
 $ docker run -it --rm -v ${PWD}/io:/io  demo
 ```
+##Submit your Docker image
 
-6. Once you are satisfied, navigate to the directory with your Dockerfile and please build your Docker image, associating it with one of your Synapse projects, and "tagging" the image with the *objectId* of your prediction submission - this comes from the leaderboard!
-,
-$ docker build -t  docker.synapse.org/<synapse_project_id>/<my_model>:<object_id> . `
+###Build Docker for Synapse Docker Repository
+
+If your Docker image works as expected, navigate to the directory with your Dockerfile and please build your Docker image, associating it with one of your Synapse projects, and "tagging" the image with the *objectId* of your prediction submission - this comes from the leaderboard!
+
+```
+$ docker build -t  docker.synapse.org/<synapse_project_id>/<my_model>:<object_id> . 
+```
 
 e.g.
 
-`$ docker build -t  docker.synapse.org/syn1234598/demo:9872134 . `
+```
+$ docker build -t  docker.synapse.org/syn1234598/demo:9872134 . 
+```
 
-7. Then, please login to the Synapse Docker repo:
+###Login to the Synapse Docker Repo
+
+(Using your Synapse user credentials) 
 
 ```
 $ docker login docker.synapse.org
@@ -58,13 +84,14 @@ Password:
 Login Succeeded 
 ````
 
-8. Push your Docker image to the Synapse project. 
+###Push your Docker image to Synapse
 
-`$ docker push docker.synapse.org/<synapse_project_id>/<my_model>:<object_id>`
+```$ docker push docker.synapse.org/<synapse_project_id>/<my_model>:<object_id>```
 
 e.g.
 
-`$ docker push docker.synapse.org/syn1234598/demo:9872134`
+```$ docker push docker.synapse.org/syn1234598/demo:9872134```
 
-9. Navigate to your project, click the 'Docker' tab and then click Docker Repository Tools -> Docker Repository Sharing Settings. Please share the project with the team 'Drug Kinase Prediction Challenge Admins.'
+###Share your Docker image
 
+Navigate to your project, click the 'Docker' tab and then click Docker Repository Tools -> Docker Repository Sharing Settings. Please share the project with the team 'Drug Kinase Prediction Challenge Admins.'
