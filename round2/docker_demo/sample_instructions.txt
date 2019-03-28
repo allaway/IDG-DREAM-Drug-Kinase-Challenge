@@ -1,42 +1,248 @@
-Sample instructions for creating a docker container. 
 
-1. Write R script (or Python, or other), save all required scripts to a single directory (e.g. /docker_demo). 
+---
 
-2. Create a Dockerfile:
-cd docker_demo
-touch Dockerfile
+This page will assist you in completing the two parts of your challenge submission to be eligible as a top performer.
 
-3. Open Dockerfile in a text editor and begin editing. Our demo requires R and the tidyverse, so in this example we will be using the rocker-tidyverse image as a base (FROM), adding a destination directory for this analysis in the container (RUN mkdir) and adding our script to that directory (COPY).
+1. A prediction file/Docker container uploaded to Synapse.
+1. A public Synapse Project that contains a writeup of your methods and source code. (Submitted after the final submissions)
 
------
+---
+<details>
+
+<summary><font size=4><strong>Create a Synapse Project</strong></font></summary>
+ 
+* Name your project `{challengeName} <Your team name>`
+* You should also use this project for your final write up submissions, which should include your write-up as a Wiki and your source code.
+
+</details>
+
+---
+
+<details>
+
+<summary><font size=4><strong>Build your Model</strong></font></summary>
+
+This section will describe how to create a file that will read in the input file, use your model to make predictions on the input file, and write the prediction file. The example is what it might look like using R.
+
+# Input files
+* All input files should be mounted in a directory in the working directory of the container called `/input`.
+* The template file from Round 2 should be stored as `/input/input.csv`. 
+
+# Output files
+* All output files should be written into a directory in the working directory of the container called `/output`.
+* The output file should be stored as `/output/predictions.csv`. 
+
+
+# Example
+This is what an example file in R might look like. We've created a working example for this challenge in [this github repository.](https://github.com/Sage-Bionetworks/IDG-DREAM-Drug-Kinase-Challenge/tree/master/round2/docker_demo)
+
+```r
+library(readr)
+set.seed(98121)
+
+template <- read_csv("../input/input.csv")
+
+##example of random predictor algorithm
+prediction <- rnorm(nrow(template), sd=1.5)+7
+prediction[prediction<0] <- 0
+
+##add prediction row to template
+template$`pKd_[M]_pred` <- prediction
+
+write_csv(template, "../output/prediction.csv")
+```
+</details>
+
+---
+
+<details>
+
+<summary><font size=4><strong>Create a Docker File</strong></font></summary>
+
+This section will describe how to write your Docker file. The Dockerfile describes the dependencies required to execute the Docker image.  These dependencies are encapsulated within the Docker image when it is built.  As such, the Docker image is a self-contained execution environment that will allow the Challenge organizers to run and reproduce your results.  This file must be named `Dockerfile`.
+
+Here is an example docker file using the example model file created in the previous section.
+
+```
+## Start from this Docker image
+FROM rocker/r-ver 
+## use rocker as a base image
+
+## Install R packages in Docker image
+RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
+RUN Rscript -e "install.packages('readr')" 
+
+## Make directories and copy your files into Docker image
+RUN mkdir model #make directory for scripts
+RUN mkdir input #make input directory
+RUN mkdir output #make output directory
+COPY demo_prediction.R /model/demo_prediction.R 
+
+RUN chmod a+x /model/demo_prediction.R
+
+## Make Docker container executable
+ENTRYPOINT ["Rscript", "/model/demo_prediction.R"]
+```
+
+
+It is important that your image can predict using any template file using the IDG-DREAM Challenge template format - e.g. the round 1 template file.
+
+In summary, your docker image must fulfill these requirements at a minimum:  1) be able to accept the Round 2 Template file as 'input.csv' 2) Write a prediction file called 'prediction.csv' in the 'output' directory. * 
+
+The rest of this wiki will go through each line in the example and explain it's purpose.
+
+
+##1. FROM (Pull from a base image)
+The FROM command establishes what existing Docker image your image starts with. 
+* Whenever possible, use current Official Repositories as the basis for your image.   
+* We recommend using Ubuntu or Rocker 
+```
+## Start from this Docker image
 FROM rocker/r-ver #use rocker as a base image
+```
 
+##2. RUN (Install dependencies)
+The most common use-case for RUN is an application of `apt-get` to install dependencies.  This example uses a different approach to install the R package readr. 
+```
+## Install R packages in Docker image
 RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.us.r-project.org'; options(repos = r);" > ~/.Rprofile
 RUN Rscript -e "install.packages('readr')" ##install required R packages for demo_prediction.R
 
-RUN mkdir test #make test script directory
-RUN mkdir io #make input-output directory
+```
 
-COPY demo_prediction.R /test/demo_prediction.R #copy over prediction script
-COPY round_2_template.csv /io/template.csv #copy round 2 template in as "template.csv"
+##3. COPY (Transfer local files into Docker image)
+Make sure all files that your execution scripts need are in the Docker image, and are executable. In the is example we are copying the script and model file from the previous sections example into the Docker image.
+```r
+## Make directories and copy your files into Docker image
+RUN mkdir bin #make directory for scripts
+RUN mkdir input #make input directory
+RUN mkdir output #make output directory
+COPY demo_prediction.R /bin/demo_prediction.R 
 
-CMD Rscript /test/demo_prediction.R #run r script 
+RUN chmod a+x /usr/local/bin/demo_prediction.R
+```
 
------
+##4. ENTRYPOINT (Make your Docker container executable)
+The ENTRYPOINT  command specifies what gets executed when your docker container is run. In this example, we want to run the rscript we copied into /usr/local/bin/.
+```
+## Make Docker container executable
+ENTRYPOINT ["Rscript", "/usr/local/bin/demo_prediction.R"]
+```
 
-It is important that your image can predict using any template file - e.g. the round 1 template file, or others. 
+For more information, visit [dockerfile best practices](https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices/).
 
-In summary, your docker image must have two things at a minimum:  1) have a template.csv file in the 'io' directory that is used to create prediction values (in the round 2 template format, should also work for round 1 template) and 2) place a prediction file called prediction.csv in the 'io' directory. 
+</details>
 
-4. Create your docker image (here, we are naming it 'demo') like so:
+---
 
+<details>
+
+<summary><font size=4><strong>Build a Docker Image</strong></font></summary>
+
+This section describes how to create your Docker image. You will need:
+* Synapse ID of a project
+* Dockerfile
+
+##1. Set up your working directory.
+* Move your Dockerfile and all files you are copying into your Dockerfile into the same directory.
+* Make the above directory your current working directory.
+
+##2. Build your Docker image
+You may now create a Docker image repository (e.g., named "my-model") within your Synapse project using the commands:
+
+```
+# syntax: docker build -t docker.synapse.org/<Your project ID>/<Repo name>:<Tag> <Dockerfile path>
+# With tagging:
+$ docker build -t  docker.synapse.org/syn12345/my-model:version1 .
+
+# Or without tagging:
+$ docker build -t  docker.synapse.org/syn12345/my-model .
+
+```
+* `<Your project ID>`: A Synapse project ID
+* `<Repo name>`: The Repository Name will need to be unique in that namespace, can be two to 255 characters, and can only contain lowercase letters, numbers or - and _.
+* `<Tag>`: Tagging your image is very helpful, because it allows you to build different versions of your Docker image. *Please tag your submission with the objectId from the leaderboard for the associated prediction file.*
+* `<Dockerfile path>`: Should be . since the Dockerfile should be in your current working directory.
+
+
+As a sidenote, you can test your Docker image after building. For example, using the example we provided on Github (see above), you can create a directory called `io` with the template file. Then from the directory with the Dockerfile, run:
+
+```
 docker build -t demo .
+docker run -it --rm -v ${PWD}/io:/input -v ${PWD}/io:/output  demo
+```
 
-5. Test that your docker image works like so:
+A file called prediction.csv should now be in your local `io` directory. 
 
-mkdir io
-docker run -it --rm -v ${PWD}/io:/io  demo
+</details>
 
+---
 
+<details>
 
+<summary><font size=4><strong>Upload your Docker Image</strong></font></summary>
 
+This section describes how to push your built Docker image from your local workstation to synapse. 
+
+##1. Login to Synapse
+Answer the questions after the following command
+```
+$ docker login docker.synapse.org
+```
+
+##2. View your built images (optional)
+
+Before pushing your image, you can see what you have built so far. This output shows the result of building my-model without tagging; notice that the TAG is latest. We have previously built several other models, which are also listed.
+
+```
+$ docker images
+REPOSITORY                                       TAG                 IMAGE ID            CREATED             SIZE
+docker.synapse.org/syn12345/my-model           latest              e5993fdf4a41        8 minutes ago       736 MB
+ubuntu                                           latest              14f60031763d        6 days ago          120 MB
+docker.synapse.org/syn12345/expr-prolif-cyto   version1            50b113cf5444        13 days ago         962 MB
+docker.synapse.org/syn12345/expr-cyto-srf      version2            0d88219f8319        3 weeks ago         972 MB
+docker.synapse.org/syn12345/expr-cyto-srf      version1            1e8a50a8d345        3 weeks ago         972 MB
+```
+
+##3. Push your Docker image
+You may now push your docker image to synapse
+```
+# syntax docker push docker.synapse.org/<Your project ID>/<Repo name>:<Tag>
+$ docker push docker.synapse.org/syn12345/my-model:version1
+```
+* `<Your project ID>`: A Synapse project ID.
+* `<Repo name>`: The Repository Name will need to be unique in that namespace, can be two to 255 characters, and can only contain lowercase letters, numbers or - and _.
+* `<Tag>`: Tagging your image is very helpful, because it allows you to build different versions of your Docker image. *Please tag your submission with the objectId from the leaderboard for the associated prediction file.*
+
+##4. Verify the Docker image was successfully pushed(optional)
+
+If the Docker image was successfully pushed, it should show up on the Docker tab of your Synapse project page. You can navigate there by first going to your project page in Synapse:
+
+`https://www.synapse.org/#!Synapse:<Your project ID>/docker` 
+
+ The Docker image (e.g., docker.synapse.org/syn12345/my-model) should be listed. We have occasionally experienced problems using older versions of Docker, where the previous push step appears to complete successfully and yet the image does not appear on the project Docker tab. If you experience a similar issue, consider updating your version of Docker.
+
+</details>
+
+---
+
+<details>
+
+<summary><font size=4><strong>Create your Writeup</strong></font></summary>
+
+ Using the project you created:
+* Create a Wiki for the project: `Tools` > `Edit Project Wiki.` This should describe your challenge methodology such as the training methods used, the types of algorithms used, the data sources used. Please also be sure to provide the exact command required to run your docker container (e.g. `docker run -it --rm -v ${PWD}/io:/input -v ${PWD}/io:/output  demo`, where the local directory io has template.csv and after running will contain predictions.csv).
+* Create a directory named `src` in your project where you will place all the source code and instructions required to build your Docker submission(s). If suitable, place the source code for different subchallenges in different folders.
+</details>
+
+---
+
+<details>
+
+<summary><font size=4><strong>Submit your Prediction/Writeup</strong></font></summary>
+
+${evalsubmit?projectId=syn18058986&unavailableMessage=Please register to make a submission.&buttonText=Submit to the challenge}
+
+</details>
+
+---
